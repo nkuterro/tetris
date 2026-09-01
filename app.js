@@ -695,7 +695,7 @@ volumeSlider.addEventListener('input', () => {
   gameAudio.setVolume(volume / 100);
   volumeValue.textContent = `${volume}%`;
   gameAudio.start();
-  gameAudio.rotate();
+  gameAudio.preview(volume / 150);
 });
 
 touchButtons.forEach((button) => {

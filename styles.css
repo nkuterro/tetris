@@ -145,7 +145,8 @@ canvas {
 
 .touch-controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(60px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(40px, 1fr));
   gap: 8px;
   width: var(--board-width);
 }
@@ -162,6 +163,41 @@ canvas {
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
+}
+
+.dpad-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.dpad-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dpad-down {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.dpad-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.action-drop {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.action-hold {
+  grid-column: 4;
+  grid-row: 2;
+}
+
+.action-pause {
+  grid-column: 4;
+  grid-row: 3;
 }
 
 .touch-btn:active {
@@ -303,7 +339,7 @@ button:active {
   }
 
   .touch-controls {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 5px;
   }
 
