@@ -151,16 +151,12 @@ const gameAudio = (() => {
     const oscillator = context.createOscillator();
     const filter = context.createBiquadFilter();
     const gain = context.createGain();
-    oscillator.type = 'sawtooth';
+    oscillator.type = 'triangle';
     oscillator.frequency.setValueAtTime(midiToFreq(midi), when);
     filter.type = 'lowpass';
-    filter.Q.setValueAtTime(1.35, when);
-    filter.frequency.setValueAtTime(320, when);
-    filter.frequency.exponentialRampToValueAtTime(
-      850 + musicState.danger * 450,
-      when + 0.055
-    );
-    filter.frequency.exponentialRampToValueAtTime(220, when + Math.min(duration, 0.28));
+    filter.Q.setValueAtTime(0.8, when);
+    filter.frequency.setValueAtTime(600, when);
+    filter.frequency.exponentialRampToValueAtTime(250, when + 0.04);
     gain.gain.setValueAtTime(0.0001, when);
     gain.gain.linearRampToValueAtTime(gainValue, when + 0.009);
     gain.gain.setTargetAtTime(gainValue * 0.55, when + 0.09, 0.08);
@@ -231,10 +227,10 @@ const gameAudio = (() => {
     const oscillator = context.createOscillator();
     const gain = context.createGain();
     oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(125, when);
-    oscillator.frequency.exponentialRampToValueAtTime(34, when + 0.085);
+    oscillator.frequency.setValueAtTime(160, when);
+    oscillator.frequency.exponentialRampToValueAtTime(38, when + 0.045);
     gain.gain.setValueAtTime(gainValue, when);
-    gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.11);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.09);
     oscillator.connect(gain);
     gain.connect(getMusicOutput(0));
     oscillator.start(when);
@@ -255,24 +251,28 @@ const gameAudio = (() => {
   function playRiser(when, duration = 0.7) {
     if (!context || !musicFilter) return;
 
-    const oscillator = context.createOscillator();
+    const bufferSize = Math.floor(context.sampleRate * duration);
+    const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i += 1) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const source = context.createBufferSource();
     const filter = context.createBiquadFilter();
     const gain = context.createGain();
-    oscillator.type = 'sawtooth';
-    oscillator.frequency.setValueAtTime(180, when);
-    oscillator.frequency.exponentialRampToValueAtTime(900, when + duration);
+    source.buffer = buffer;
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(500, when);
-    filter.frequency.exponentialRampToValueAtTime(4200, when + duration);
-    filter.Q.setValueAtTime(1.8, when);
+    filter.Q.setValueAtTime(1.2, when);
+    filter.frequency.setValueAtTime(400, when);
+    filter.frequency.exponentialRampToValueAtTime(3500, when + duration);
     gain.gain.setValueAtTime(0.0001, when);
-    gain.gain.exponentialRampToValueAtTime(0.055, when + duration * 0.75);
+    gain.gain.exponentialRampToValueAtTime(0.04, when + duration * 0.8);
     gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
-    oscillator.connect(filter);
+    source.connect(filter);
     filter.connect(gain);
     gain.connect(getMusicOutput(0));
-    oscillator.start(when);
-    oscillator.stop(when + duration + 0.02);
+    source.start(when);
   }
 
   function scheduleMusic() {
