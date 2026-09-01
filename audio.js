@@ -145,7 +145,7 @@ const gameAudio = (() => {
     oscillator.stop(when + duration + 0.02);
   }
 
-  function playBassSynth(midi, duration, when, gainValue = 0.12) {
+  function playBassSynth(midi, duration, when, gainValue = 0.08) {
     if (!context || !musicFilter) return;
 
     const oscillator = context.createOscillator();
@@ -163,7 +163,7 @@ const gameAudio = (() => {
     filter.frequency.exponentialRampToValueAtTime(260, when + Math.min(duration, 0.28));
     gain.gain.setValueAtTime(0.0001, when);
     gain.gain.exponentialRampToValueAtTime(gainValue, when + 0.012);
-    gain.gain.setTargetAtTime(gainValue * 0.62, when + 0.09, 0.08);
+    gain.gain.setTargetAtTime(gainValue * 0.55, when + 0.09, 0.08);
     gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
     oscillator.connect(filter);
     filter.connect(gain);
@@ -325,13 +325,13 @@ const gameAudio = (() => {
       const allowArp = musicStep >= 320 && macroMeasure >= 4 && !isDropPreBreak;
       const introLayer = Math.min(1, musicStep / 256);
 
-      if (allowBass && allowLowEnd && (beat === 0 || beat === 3 || beat === 6 || (dropActive && beat === 7))) {
+      if (allowBass && allowLowEnd && (beat === 0 || beat === 4 || (dropActive && beat === 7))) {
         const bassDuration = beat === 0 || dropActive ? 0.34 : 0.22;
-        playBassSynth(bassMidi, bassDuration, nextMusicTime, dropActive ? 0.11 : 0.09);
-        playSubBass(bassMidi - 12, bassDuration + 0.04, nextMusicTime, dropActive ? 0.14 : 0.1);
+        playBassSynth(bassMidi, bassDuration, nextMusicTime, dropActive ? 0.085 : 0.07);
+        playSubBass(bassMidi - 12, bassDuration + 0.04, nextMusicTime, dropActive ? 0.095 : 0.065);
       }
-      if (allowBass && allowLowEnd && (beat === 1 || beat === 5 || (dropActive && beat === 7))) {
-        playBassSynth(bassMidi, 0.13, nextMusicTime, 0.04);
+      if (allowBass && allowLowEnd && (dropActive && (beat === 3 || beat === 7))) {
+        playBassSynth(bassMidi, 0.1, nextMusicTime, 0.035);
       }
       if (!intro && dropActive && musicStep % 3 === 1) {
         playMusicTone(midiToFreq(chord.root - 12), 0.12, 'sine', musicLevel, nextMusicTime, 0.055, -0.25);
