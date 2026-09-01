@@ -81,8 +81,10 @@ let dropAccumulator = 0;
 let isPaused = false;
 let isRunning = false;
 let gameOver = false;
+let isClearing = false;
 let clearEffect = [];
 let clearTimeoutId = null;
+let dropTimerId = null;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -184,6 +186,7 @@ function clearLines() {
     return 0;
   }
 
+  isClearing = true;
   const cells = [];
   rowsToClear.forEach((y) => {
     for (let x = 0; x < COLS; x += 1) {
@@ -216,6 +219,7 @@ function clearLines() {
     }
     board.splice(0, board.length, ...remaining);
     clearEffect = [];
+    isClearing = false;
     clearTimeoutId = null;
     spawnPiece();
     drawBoard();
@@ -457,12 +461,18 @@ function drawNextPreview() {
 }
 
 function resetGame() {
+  if (dropTimerId) {
+    clearTimeout(dropTimerId);
+    dropTimerId = null;
+  }
+
   if (clearTimeoutId) {
     clearTimeout(clearTimeoutId);
     clearTimeoutId = null;
   }
 
   clearEffect = [];
+  isClearing = false;
 
   for (let y = 0; y < ROWS; y += 1) {
     for (let x = 0; x < COLS; x += 1) {
@@ -483,17 +493,38 @@ function resetGame() {
   dropAccumulator = 0;
   currentPiece = null;
   nextPiece = null;
+  isRunning = true;
   spawnPiece();
   updateStats();
   drawBoard();
   drawHoldPreview();
   drawNextPreview();
-  isRunning = true;
+  scheduleDrop();
+}
+
+function scheduleDrop() {
+  if (dropTimerId) {
+    clearTimeout(dropTimerId);
+  }
+
+  dropTimerId = setTimeout(() => {
+    dropTimerId = null;
+    if (isRunning && !isPaused && !gameOver && !isClearing) {
+      movePiece(0, 1);
+    }
+    if (isRunning && !gameOver) {
+      scheduleDrop();
+    }
+  }, dropInterval);
 }
 
 function endGame() {
   gameOver = true;
   isRunning = false;
+  if (dropTimerId) {
+    clearTimeout(dropTimerId);
+    dropTimerId = null;
+  }
   gameAudio.gameOver();
   drawBoard();
   drawNextPreview();
@@ -514,14 +545,6 @@ function tick(timestamp) {
   if (!lastTime) lastTime = timestamp;
   const delta = timestamp - lastTime;
   lastTime = timestamp;
-
-  if (!isPaused && !gameOver) {
-    dropAccumulator += delta;
-    while (dropAccumulator >= dropInterval) {
-      movePiece(0, 1);
-      dropAccumulator -= dropInterval;
-    }
-  }
 
   drawBoard();
   requestAnimationFrame(tick);
