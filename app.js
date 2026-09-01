@@ -139,7 +139,7 @@ function drawBackground(timestamp) {
   const hueDelta = ((targetHue - backgroundHue + 540) % 360) - 180;
   backgroundHue = (backgroundHue + hueDelta * 0.035 + 360) % 360;
   const hue = backgroundHue;
-  const pattern = Math.floor(levelIndex / 2) % 4;
+  const pattern = levelIndex % 4;
   const intensity = Math.min(0.9, 0.28 + levelIndex * 0.035);
   const pulse = 0.5 + Math.sin(time * (2.2 + pattern * 0.35)) * 0.5;
   const impact = backgroundImpact;
@@ -525,7 +525,6 @@ function hardDrop() {
   }
 
   score += distance * 2;
-  backgroundImpact = Math.max(backgroundImpact, Math.min(0.8, 0.2 + distance / 24));
   gameAudio.hardDrop();
   updateStats();
   lockPiece();
