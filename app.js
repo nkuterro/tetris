@@ -484,14 +484,6 @@ function resetGame() {
     dropTimerId = null;
   }
 
-  function startGame() {
-    gameAudio.start();
-    menuScreen.classList.remove('is-visible');
-    menuScreen.hidden = true;
-    gameShell.classList.add('is-visible');
-    resetGame();
-  }
-
   if (clearTimeoutId) {
     clearTimeout(clearTimeoutId);
     clearTimeoutId = null;
@@ -529,6 +521,21 @@ function resetGame() {
   drawNextPreview();
   scheduleDrop();
   updateDebugStatus();
+}
+
+function showPauseMenu() {
+  if (!isRunning || gameOver) return;
+  isPaused = true;
+  menuScreen.classList.add('is-visible');
+  gameAudio.start();
+  drawBoard();
+}
+
+function hidePauseMenu() {
+  menuScreen.classList.remove('is-visible');
+  isPaused = false;
+  gameAudio.start();
+  drawBoard();
 }
 
 function scheduleDrop() {
@@ -580,8 +587,11 @@ function tick(timestamp) {
 
 function togglePause() {
   if (!isRunning || gameOver) return;
-  isPaused = !isPaused;
-  drawBoard();
+  if (isPaused) {
+    hidePauseMenu();
+  } else {
+    showPauseMenu();
+  }
 }
 
 function handleTouchAction(action) {
@@ -668,7 +678,7 @@ startBtn.addEventListener('click', () => {
   resetGame();
 });
 
-menuStartBtn.addEventListener('click', startGame);
+menuStartBtn.addEventListener('click', hidePauseMenu);
 
 soundBtn.addEventListener('click', () => {
   const muted = gameAudio.toggleMute();
@@ -694,9 +704,4 @@ window.addEventListener('error', (event) => {
 });
 
 resetGame();
-isRunning = false;
-clearInterval(dropTimerId);
-dropTimerId = null;
-menuScreen.classList.add('is-visible');
-gameShell.classList.remove('is-visible');
 requestAnimationFrame(tick);

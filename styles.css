@@ -27,10 +27,14 @@ body {
   position: fixed;
   inset: 0;
   z-index: 10;
-  display: grid;
+  display: none;
   place-items: center;
   padding: 20px;
   background: radial-gradient(circle at top, #0f172a, var(--bg));
+}
+
+.menu-screen.is-visible {
+  display: grid;
 }
 
 .menu-card {
@@ -95,14 +99,6 @@ body {
   width: auto;
   margin: 0;
   padding: 6px 12px;
-}
-
-.game-shell {
-  visibility: hidden;
-}
-
-.game-shell.is-visible {
-  visibility: visible;
 }
 
 .game-shell {
