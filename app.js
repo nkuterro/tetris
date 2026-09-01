@@ -94,6 +94,10 @@ let dropTimerId = null;
 let dropCount = 0;
 let lastInput = '-';
 let combo = 0;
+let particles = [];
+let floatingTexts = [];
+let shakeTime = 0;
+let shockwave = null;
 
 function updateDebugStatus(message = '') {
   if (!debugStatus) return;
@@ -216,6 +220,18 @@ function clearLines() {
 
   clearEffect = cells;
   const cleared = rowsToClear.length;
+  rowsToClear.forEach((y) => {
+    for (let x = 0; x < COLS; x += 1) {
+      if (board[y][x]) {
+        createParticles(x * BLOCK, y * BLOCK, COLORS[board[y][x]], cleared === 4 ? 10 : 5);
+      }
+    }
+  });
+  shakeTime = cleared === 4 ? 18 : 5;
+  if (cleared === 4) {
+    floatingTexts.push({ text: 'TETRIS!', x: boardCanvas.width / 2, y: boardCanvas.height / 2, color: '#facc15', scale: 0.55, alpha: 1 });
+    shockwave = { radius: 20, alpha: 0.9 };
+  }
   const lineScores = [0, 100, 300, 500, 800];
   score += lineScores[cleared] * level;
   lines += cleared;
@@ -406,16 +422,74 @@ function getGhostY() {
 function drawCell(ctx, x, y, color, size, alpha = 1) {
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = color;
-  ctx.fillRect(x * size, y * size, size, size);
-  ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
+  const px = x * size;
+  const py = y * size;
+  const gradient = ctx.createLinearGradient(px, py, px + size, py + size);
+  gradient.addColorStop(0, '#ffffff');
+  gradient.addColorStop(0.08, color);
+  gradient.addColorStop(1, '#0f172a');
+  ctx.fillStyle = gradient;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = alpha > 0.5 ? 5 : 0;
+  ctx.fillRect(px + 1, py + 1, size - 2, size - 2);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+  ctx.fillRect(px + 2, py + 2, size - 4, 3);
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.6)';
   ctx.lineWidth = 1;
-  ctx.strokeRect(x * size + 0.5, y * size + 0.5, size - 1, size - 1);
+  ctx.strokeRect(px + 0.5, py + 0.5, size - 1, size - 1);
   ctx.restore();
+}
+
+function createParticles(x, y, color, count) {
+  for (let i = 0; i < count; i += 1) {
+    particles.push({
+      x: x + BLOCK / 2,
+      y: y + BLOCK / 2,
+      vx: (Math.random() - 0.5) * 5,
+      vy: -Math.random() * 4 - 1,
+      size: 2 + Math.random() * 4,
+      color,
+      alpha: 1,
+      life: 0.92 + Math.random() * 0.05
+    });
+  }
+}
+
+function updateEffects(delta) {
+  const frame = Math.min(delta / 16.67, 2);
+  particles = particles.filter((particle) => {
+    particle.x += particle.vx * frame;
+    particle.y += particle.vy * frame;
+    particle.vy += 0.22 * frame;
+    particle.alpha *= Math.pow(particle.life, frame);
+    return particle.alpha > 0.05;
+  });
+
+  floatingTexts = floatingTexts.filter((text) => {
+    text.y -= 0.7 * frame;
+    text.scale += 0.018 * frame;
+    text.alpha -= 0.018 * frame;
+    return text.alpha > 0;
+  });
+
+  shakeTime = Math.max(0, shakeTime - frame);
+  if (shockwave) {
+    shockwave.radius += 8 * frame;
+    shockwave.alpha -= 0.045 * frame;
+    if (shockwave.alpha <= 0) shockwave = null;
+  }
 }
 
 function drawBoard() {
   boardCtx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
+  boardCtx.save();
+  if (shakeTime > 0) {
+    boardCtx.translate(
+      (Math.random() - 0.5) * shakeTime * 0.7,
+      (Math.random() - 0.5) * shakeTime * 0.7
+    );
+  }
 
   for (let y = 0; y < ROWS; y += 1) {
     for (let x = 0; x < COLS; x += 1) {
@@ -464,6 +538,41 @@ function drawBoard() {
     boardCtx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
   }
 
+  particles.forEach((particle) => {
+    boardCtx.save();
+    boardCtx.globalAlpha = particle.alpha;
+    boardCtx.fillStyle = particle.color;
+    boardCtx.shadowColor = particle.color;
+    boardCtx.shadowBlur = 7;
+    boardCtx.fillRect(particle.x, particle.y, particle.size, particle.size);
+    boardCtx.restore();
+  });
+
+  if (shockwave) {
+    boardCtx.save();
+    boardCtx.globalAlpha = shockwave.alpha;
+    boardCtx.strokeStyle = '#facc15';
+    boardCtx.lineWidth = 4;
+    boardCtx.shadowColor = '#facc15';
+    boardCtx.shadowBlur = 16;
+    boardCtx.beginPath();
+    boardCtx.arc(boardCanvas.width / 2, boardCanvas.height / 2, shockwave.radius, 0, Math.PI * 2);
+    boardCtx.stroke();
+    boardCtx.restore();
+  }
+
+  floatingTexts.forEach((text) => {
+    boardCtx.save();
+    boardCtx.globalAlpha = text.alpha;
+    boardCtx.fillStyle = text.color;
+    boardCtx.textAlign = 'center';
+    boardCtx.font = `900 ${Math.floor(30 * text.scale)}px Segoe UI`;
+    boardCtx.shadowColor = text.color;
+    boardCtx.shadowBlur = 14;
+    boardCtx.fillText(text.text, text.x, text.y);
+    boardCtx.restore();
+  });
+
   if (isPaused && !gameOver) {
     boardCtx.fillStyle = 'rgba(2, 8, 23, 0.7)';
     boardCtx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
@@ -472,6 +581,7 @@ function drawBoard() {
     boardCtx.textAlign = 'center';
     boardCtx.fillText('PAUSED', boardCanvas.width / 2, boardCanvas.height / 2);
   }
+  boardCtx.restore();
 }
 
 function drawPreview(ctx, canvas, piece) {
@@ -518,6 +628,10 @@ function resetGame() {
   }
 
   clearEffect = [];
+  particles = [];
+  floatingTexts = [];
+  shakeTime = 0;
+  shockwave = null;
   isClearing = false;
   dropCount = 0;
   lastInput = 'reset';
@@ -621,6 +735,7 @@ function tick(timestamp) {
   const delta = timestamp - lastTime;
   lastTime = timestamp;
 
+  updateEffects(delta);
   drawBoard();
   requestAnimationFrame(tick);
 }
