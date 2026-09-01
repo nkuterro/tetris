@@ -817,7 +817,10 @@ function drawHoldPreview() {
 }
 
 function drawNextPreview() {
-  const previews = [nextPiece, ...queue.slice(0, 2)];
+  const previews = [
+    nextPiece,
+    ...queue.slice(0, 2).map((type) => createPiece(type))
+  ];
   nextContexts.forEach((context, index) => {
     drawPreview(context, nextCanvases[index], previews[index] || null);
   });
