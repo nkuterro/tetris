@@ -3,6 +3,52 @@ const gameAudio = (() => {
   let masterGain = null;
   let muted = false;
   let volume = 1;
+  let musicTimer = null;
+  let musicStep = 0;
+  let musicLevel = 1;
+  let nextMusicTime = 0;
+
+  const musicNotes = [130.81, 155.56, 174.61, 196, 233.08, 261.63, 293.66, 349.23];
+
+  function playMusicTone(frequency, duration, type, level, when, gainValue) {
+    if (!context || !masterGain) return;
+
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency * (1 + Math.min(level - 1, 10) * 0.01), when);
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.exponentialRampToValueAtTime(gainValue, when + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    oscillator.connect(gain);
+    gain.connect(masterGain);
+    oscillator.start(when);
+    oscillator.stop(when + duration + 0.02);
+  }
+
+  function scheduleMusic() {
+    if (!context || !musicTimer) return;
+
+    const stepDuration = 60 / (92 + Math.min(musicLevel - 1, 10) * 5) / 2;
+    while (nextMusicTime < context.currentTime + 0.18) {
+      const step = musicStep % 16;
+      const barPosition = step % 4;
+      const noteIndex = (musicStep + musicLevel) % musicNotes.length;
+
+      if (barPosition === 0 || barPosition === 2) {
+        playMusicTone(65.41, 0.12, 'sine', musicLevel, nextMusicTime, 0.055);
+      }
+      if (step % 4 === 2 || (musicLevel >= 3 && step % 8 === 6)) {
+        playMusicTone(196, 0.045, 'square', musicLevel, nextMusicTime, 0.018);
+      }
+      if (step % 2 === 0) {
+        playMusicTone(musicNotes[noteIndex], 0.16, 'triangle', musicLevel, nextMusicTime, 0.035);
+      }
+
+      musicStep += 1;
+      nextMusicTime += stepDuration;
+    }
+  }
 
   function ensureStarted() {
     if (!context) {
@@ -76,6 +122,25 @@ const gameAudio = (() => {
     }
   }
 
+  function startMusic() {
+    if (!ensureStarted() || musicTimer) return;
+    musicStep = 0;
+    nextMusicTime = context.currentTime + 0.03;
+    musicTimer = window.setInterval(scheduleMusic, 80);
+    scheduleMusic();
+  }
+
+  function stopMusic() {
+    if (musicTimer) {
+      window.clearInterval(musicTimer);
+      musicTimer = null;
+    }
+  }
+
+  function setMusicLevel(level) {
+    musicLevel = Math.max(1, Number(level) || 1);
+  }
+
   function preview(value) {
     if (muted || !ensureStarted()) return;
     tone(220 + value * 660, 0.12, 'triangle', 0.16, 220 + value * 660);
@@ -92,6 +157,9 @@ const gameAudio = (() => {
     },
     setVolume,
     preview,
+    startMusic,
+    stopMusic,
+    setMusicLevel,
     move() {
       tone(180, 0.035, 'square', 0.045, 230);
     },
@@ -122,6 +190,7 @@ const gameAudio = (() => {
       noise(0.18, 0.1);
     },
     gameOver() {
+      stopMusic();
       tone(220, 0.35, 'sawtooth', 0.1, 110);
       window.setTimeout(() => tone(140, 0.45, 'sawtooth', 0.08, 55), 160);
     }

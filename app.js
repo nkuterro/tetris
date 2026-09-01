@@ -220,6 +220,7 @@ function clearLines() {
   lines += cleared;
   level = Math.floor(lines / LINES_PER_LEVEL) + 1;
   dropInterval = getDropInterval(level);
+  gameAudio.setMusicLevel(level);
   updateStats();
   if (cleared === 4) {
     gameAudio.tetris();
@@ -479,6 +480,7 @@ function drawNextPreview() {
 }
 
 function resetGame() {
+  gameAudio.stopMusic();
   if (dropTimerId) {
     clearInterval(dropTimerId);
     dropTimerId = null;
@@ -507,6 +509,7 @@ function resetGame() {
   lines = 0;
   level = 1;
   dropInterval = getDropInterval(level);
+  gameAudio.setMusicLevel(level);
   isPaused = false;
   gameOver = false;
   menuScreen.hidden = true;
@@ -531,6 +534,7 @@ function showPauseMenu() {
   menuScreen.hidden = false;
   menuScreen.classList.add('is-visible');
   gameAudio.start();
+  gameAudio.stopMusic();
   drawBoard();
 }
 
@@ -543,6 +547,7 @@ function hidePauseMenu() {
     scheduleDrop();
   }
   gameAudio.start();
+  gameAudio.startMusic();
   drawBoard();
 }
 
@@ -658,6 +663,7 @@ window.addEventListener('keydown', (event) => {
   }
   if (typeof gameAudio !== 'undefined') {
     gameAudio.start();
+    gameAudio.startMusic();
   }
 
   if (key === 'KeyP') {
@@ -709,6 +715,7 @@ startBtn.addEventListener('click', () => {
     gameAudio.start();
   }
   resetGame();
+  gameAudio.startMusic();
 });
 
 menuStartBtn.addEventListener('click', hidePauseMenu);
