@@ -74,11 +74,11 @@ const gameAudio = (() => {
     if (masterGain && !muted) {
       masterGain.gain.setTargetAtTime(volume, context.currentTime, 0.02);
     }
+  }
 
-    function preview(value) {
-      if (muted || !ensureStarted()) return;
-      tone(220 + value * 660, 0.12, 'triangle', 0.16, 220 + value * 660);
-    }
+  function preview(value) {
+    if (muted || !ensureStarted()) return;
+    tone(220 + value * 660, 0.12, 'triangle', 0.16, 220 + value * 660);
   }
 
   return {
