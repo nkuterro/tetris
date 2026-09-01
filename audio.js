@@ -12,6 +12,9 @@ const gameAudio = (() => {
   let musicFeedback = null;
   let musicFilter = null;
   let musicLevelTarget = 1;
+  let melodyIndex = 0;
+  let bassPatternIndex = 0;
+  let musicPhase = 'groove';
   let musicState = {
     danger: 0,
     clearedLines: 0,
@@ -40,12 +43,31 @@ const gameAudio = (() => {
     [0, 0, 5, 7, 0, 3, 7, 5],
     [0, 5, 7, 5, 0, 7, 5, 3]
   ];
-  const melodyPatterns = [
-    [0, 2, 4, 2, 5, 4, 2, 1],
-    [4, 2, 5, 7, 4, 2, 1, 2],
-    [0, 4, 2, 5, 7, 5, 4, 2],
-    [5, 4, 2, 1, 2, 4, 5, 7]
-  ];
+  const melodyTransitions = {
+    0: [0, 1, 2, 4, 5],
+    1: [0, 2, 3, 4, 6],
+    2: [0, 3, 4, 5, 7],
+    3: [1, 2, 4, 5, 6],
+    4: [0, 2, 5, 6, 7],
+    5: [2, 3, 4, 7, 8],
+    6: [0, 1, 4, 5, 7],
+    7: [0, 2, 3, 6, 8],
+    8: [0, 1, 4, 6, 7]
+  };
+
+  function chooseNextMelodyIndex() {
+    const options = melodyTransitions[melodyIndex] || [0, 2, 4];
+    melodyIndex = options[Math.floor(Math.random() * options.length)];
+    return melodyIndex;
+  }
+
+  function chooseNextSection() {
+    const danger = musicState.danger;
+    const roll = Math.random();
+    if (danger > 0.72 || (danger > 0.5 && roll > 0.35)) return 'drop';
+    if (danger > 0.3 || musicLevel >= 2) return roll > 0.3 ? 'build' : 'groove';
+    return roll > 0.72 ? 'break' : 'groove';
+  }
 
   function getMusicOutput(pan = 0) {
     const panner = context.createStereoPanner();
@@ -163,34 +185,34 @@ const gameAudio = (() => {
     while (nextMusicTime < context.currentTime + 0.18) {
       const step = musicStep % 64;
       const measure = Math.floor(step / 8);
-      const progressionName =
-        musicState.danger > 0.62 || musicLevel >= 4 ? 'chorus' : 'verse';
+      if (step === 0) {
+        musicPhase = chooseNextSection();
+        bassPatternIndex = (bassPatternIndex + 1 + Math.floor(Math.random() * 2)) % bassPatterns.length;
+        if (musicPhase !== 'break') chooseNextMelodyIndex();
+      }
+
+      const progressionName = musicPhase === 'drop' ? 'chorus' : 'verse';
       const progression = chordProgressions[progressionName];
       const bar = measure % progression.length;
       const beat = step % 8;
       const chord = progression[bar];
-      const phrase = Math.floor(musicStep / 64) % melodyPatterns.length;
-      const pattern = melodyPatterns[phrase];
-      const bassLine = bassPatterns[phrase];
-      const melodyIndex = (pattern[beat] + (musicState.danger > 0.75 ? 2 : 0)) % minorScale.length;
-      const melodyMidi = minorScale[melodyIndex] + 12;
+      const bassLine = bassPatterns[bassPatternIndex];
+      const melodyStep = (musicStep + beat) % 3 === 0
+        ? chooseNextMelodyIndex()
+        : melodyIndex;
+      const melodyMidi = minorScale[melodyStep] + 12;
       const bassMidi = chord.root + bassLine[beat];
-      const section = Math.floor(musicStep / 64) % 4;
-      const phase = musicState.danger > 0.62 || musicLevel >= 4
-        ? 'drop'
-        : musicState.danger > 0.35 || musicLevel >= 2
-          ? 'build'
-          : section % 2 === 0
-            ? 'groove'
-            : 'break';
-      const melodyActive = phase !== 'break' || musicState.danger > 0.55;
-      const padActive = phase !== 'groove' || musicLevel >= 2;
-      const dropActive = phase === 'drop';
-      const buildActive = phase === 'build';
+      const melodyActive = musicPhase !== 'break' || musicState.danger > 0.55;
+      const padActive = musicPhase !== 'groove' || musicLevel >= 2;
+      const dropActive = musicPhase === 'drop';
+      const buildActive = musicPhase === 'build';
 
-      if (beat === 0 || beat === 3 || beat === 6) {
+      if (beat === 0 || beat === 3 || beat === 6 || (dropActive && beat === 7)) {
         playMusicTone(midiToFreq(bassMidi - 12), 0.24, 'sine', musicLevel, nextMusicTime, 0.13, -0.18);
         playMusicTone(midiToFreq(bassMidi), 0.16, 'triangle', musicLevel, nextMusicTime, 0.04, -0.1);
+      }
+      if (dropActive && musicStep % 3 === 1) {
+        playMusicTone(midiToFreq(chord.root - 12), 0.12, 'sine', musicLevel, nextMusicTime, 0.055, -0.25);
       }
       if (dropActive ? beat % 2 === 0 : beat === 0) {
         playKick(nextMusicTime, dropActive ? 0.17 : 0.12);
@@ -204,7 +226,7 @@ const gameAudio = (() => {
       if (musicStep % 2 === 0 || (musicLevel >= 3 && beat === 3)) {
         playMusicNoise(0.025, nextMusicTime, musicLevel >= 3 ? 0.024 : 0.014, -0.35);
       }
-      if (melodyActive && musicStep % 2 === 0) {
+      if (melodyActive && (musicStep % 2 === 0 || (dropActive && musicStep % 3 === 0))) {
         playSynthLead(melodyMidi, 0.12, nextMusicTime, Math.sin(musicStep * 0.7) * 0.4, musicLevel >= 3 ? 0.034 : 0.026);
       }
       if (dropActive && musicStep % 2 === 1) {
@@ -313,6 +335,9 @@ const gameAudio = (() => {
   function startMusic() {
     if (!ensureStarted() || musicTimer) return;
     musicStep = 0;
+    melodyIndex = 0;
+    bassPatternIndex = 0;
+    musicPhase = 'groove';
     nextMusicTime = context.currentTime + 0.03;
     musicTimer = window.setInterval(scheduleMusic, 80);
     scheduleMusic();
