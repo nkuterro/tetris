@@ -14,6 +14,7 @@ const scoreEl = document.getElementById('score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
 const startBtn = document.getElementById('start-btn');
+const soundBtn = document.getElementById('sound-btn');
 const touchButtons = document.querySelectorAll('.touch-btn');
 
 const COLORS = {
