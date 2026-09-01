@@ -128,15 +128,15 @@ const gameAudio = (() => {
     oscillator.type = 'sawtooth';
     oscillator.frequency.setValueAtTime(frequency, when);
     filter.type = 'lowpass';
-    filter.Q.setValueAtTime(2.2, when);
-    filter.frequency.setValueAtTime(420, when);
+    filter.Q.setValueAtTime(1.05, when);
+    filter.frequency.setValueAtTime(1100, when);
     filter.frequency.exponentialRampToValueAtTime(
-      2400 + musicState.danger * 1800,
-      when + 0.012
+      3000 + musicState.danger * 1200,
+      when + 0.04
     );
-    filter.frequency.exponentialRampToValueAtTime(650, when + duration);
+    filter.frequency.exponentialRampToValueAtTime(900, when + duration);
     gain.gain.setValueAtTime(0.0001, when);
-    gain.gain.exponentialRampToValueAtTime(gainValue, when + 0.008);
+    gain.gain.linearRampToValueAtTime(gainValue, when + 0.006);
     gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
     oscillator.connect(filter);
     filter.connect(gain);
@@ -154,15 +154,15 @@ const gameAudio = (() => {
     oscillator.type = 'sawtooth';
     oscillator.frequency.setValueAtTime(midiToFreq(midi), when);
     filter.type = 'lowpass';
-    filter.Q.setValueAtTime(3.4, when);
-    filter.frequency.setValueAtTime(180, when);
+    filter.Q.setValueAtTime(1.35, when);
+    filter.frequency.setValueAtTime(320, when);
     filter.frequency.exponentialRampToValueAtTime(
-      1100 + musicState.danger * 700,
-      when + 0.035
+      850 + musicState.danger * 450,
+      when + 0.055
     );
-    filter.frequency.exponentialRampToValueAtTime(260, when + Math.min(duration, 0.28));
+    filter.frequency.exponentialRampToValueAtTime(220, when + Math.min(duration, 0.28));
     gain.gain.setValueAtTime(0.0001, when);
-    gain.gain.exponentialRampToValueAtTime(gainValue, when + 0.012);
+    gain.gain.linearRampToValueAtTime(gainValue, when + 0.009);
     gain.gain.setTargetAtTime(gainValue * 0.55, when + 0.09, 0.08);
     gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
     oscillator.connect(filter);
