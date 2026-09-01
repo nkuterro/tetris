@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tetris</title>
-    <link rel="stylesheet" href="styles.css?v=20260901-41" />
+    <link rel="stylesheet" href="styles.css?v=20260901-42" />
   </head>
   <body>
     <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -84,6 +84,7 @@
           <h1>Tetris</h1>
           <div class="stats">
             <div><span>Score</span><strong id="score">0</strong></div>
+            <div><span>Best</span><strong id="high-score">0</strong></div>
             <div><span>Lines</span><strong id="lines">0</strong></div>
             <div><span>Level</span><strong id="level">1</strong></div>
           </div>
@@ -91,7 +92,11 @@
 
         <div class="card preview-card">
           <h2>Next</h2>
-          <canvas id="next" width="120" height="120" aria-label="Next piece preview"></canvas>
+          <div class="next-previews">
+            <canvas id="next" width="120" height="120" aria-label="Next piece preview"></canvas>
+            <canvas id="next-2" width="120" height="120" aria-label="Second next piece preview"></canvas>
+            <canvas id="next-3" width="120" height="120" aria-label="Third next piece preview"></canvas>
+          </div>
         </div>
 
         <div class="card controls-card">
@@ -112,7 +117,7 @@
       </aside>
     </div>
 
-    <script src="audio.js?v=20260901-41"></script>
-    <script src="app.js?v=20260901-41"></script>
+    <script src="audio.js?v=20260901-42"></script>
+    <script src="app.js?v=20260901-42"></script>
   </body>
 </html>

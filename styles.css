@@ -317,10 +317,36 @@ h2 {
   align-items: center;
 }
 
+.next-previews {
+  display: grid;
+  gap: 6px;
+}
+
+.next-previews canvas {
+  width: 88px;
+  height: 88px;
+}
+
+.danger-level #game {
+  border-color: #fb7185;
+  box-shadow: 0 0 28px rgba(251, 113, 133, 0.55), inset 0 0 18px rgba(0, 0, 0, 0.8);
+  animation: danger-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes danger-pulse {
+  from { filter: saturate(1); }
+  to { filter: saturate(1.35) brightness(1.08); }
+}
+
 #hold,
 #next {
   background: rgba(2, 8, 23, 0.48);
   border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.next-previews canvas {
+  width: 64px;
+  height: 64px;
 }
 
 .controls-card ul {

@@ -8,9 +8,12 @@ const boardCanvas = document.getElementById('game');
 const boardCtx = boardCanvas.getContext('2d');
 const nextCanvas = document.getElementById('next');
 const nextCtx = nextCanvas.getContext('2d');
+const nextCanvases = [nextCanvas, document.getElementById('next-2'), document.getElementById('next-3')];
+const nextContexts = nextCanvases.map((canvas) => canvas.getContext('2d'));
 const holdCanvas = document.getElementById('hold');
 const holdCtx = holdCanvas.getContext('2d');
 const scoreEl = document.getElementById('score');
+const highScoreEl = document.getElementById('high-score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
 const startBtn = document.getElementById('start-btn');
@@ -112,6 +115,7 @@ let particles = [];
 let floatingTexts = [];
 let shakeTime = 0;
 let shockwave = null;
+let highScore = Number(localStorage.getItem('tetris-high-score') || 0);
 let backgroundImpact = 0;
 let backgroundFlash = 0;
 let backgroundHue = 190;
@@ -463,6 +467,11 @@ function clearLines() {
 
 function updateStats() {
   scoreEl.textContent = String(score);
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem('tetris-high-score', String(highScore));
+  }
+  highScoreEl.textContent = String(highScore);
   linesEl.textContent = String(lines);
   levelEl.textContent = String(level);
 }
@@ -485,6 +494,7 @@ function updateMusicState(clearedLines = 0) {
     stackHeight / ROWS,
     (occupied / (COLS * ROWS)) * 1.35
   );
+  gameShell.classList.toggle('danger-level', danger >= 0.72);
   gameAudio.setMusicState({ danger, clearedLines, combo });
 }
 
@@ -807,7 +817,10 @@ function drawHoldPreview() {
 }
 
 function drawNextPreview() {
-  drawPreview(nextCtx, nextCanvas, nextPiece);
+  const previews = [nextPiece, ...queue.slice(0, 2)];
+  nextContexts.forEach((context, index) => {
+    drawPreview(context, nextCanvases[index], previews[index] || null);
+  });
 }
 
 function resetGame(startImmediately = true) {
