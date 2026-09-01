@@ -17,6 +17,8 @@ const startBtn = document.getElementById('start-btn');
 const soundBtn = document.getElementById('sound-btn');
 const menuScreen = document.getElementById('menu-screen');
 const menuStartBtn = document.getElementById('menu-start-btn');
+const startScreen = document.getElementById('start-screen');
+const titleStartBtn = document.getElementById('title-start-btn');
 const gameShell = document.querySelector('.game-shell');
 const volumeSlider = document.getElementById('volume-slider');
 const volumeValue = document.getElementById('volume-value');
@@ -88,6 +90,7 @@ let lastTime = 0;
 let dropAccumulator = 0;
 let isPaused = false;
 let isRunning = false;
+let isGameStarted = false;
 let gameOver = false;
 let isClearing = false;
 let clearEffect = [];
@@ -771,7 +774,7 @@ function drawNextPreview() {
   drawPreview(nextCtx, nextCanvas, nextPiece);
 }
 
-function resetGame() {
+function resetGame(startImmediately = true) {
   gameAudio.stopMusic();
   if (dropTimerId) {
     clearInterval(dropTimerId);
@@ -819,14 +822,26 @@ function resetGame() {
   dropAccumulator = 0;
   currentPiece = null;
   nextPiece = null;
-  isRunning = true;
+  isRunning = startImmediately;
   spawnPiece();
   updateStats();
   drawBoard();
   drawHoldPreview();
   drawNextPreview();
-  scheduleDrop();
+  if (startImmediately) {
+    scheduleDrop();
+  }
   updateDebugStatus();
+}
+
+async function startGame() {
+  if (isGameStarted) return;
+  isGameStarted = true;
+  startScreen.hidden = true;
+  startScreen.classList.remove('is-visible');
+  resetGame(true);
+  await gameAudio.start();
+  await gameAudio.startMusic();
 }
 
 function showPauseMenu() {
@@ -916,14 +931,6 @@ function handleTouchAction(action) {
     return;
   }
 
-  if (!isRunning && !gameOver) {
-    isRunning = true;
-    isPaused = false;
-    if (!dropTimerId) {
-      scheduleDrop();
-    }
-  }
-
   if (isPaused || gameOver) {
     return;
   }
@@ -962,6 +969,14 @@ window.addEventListener('keydown', (event) => {
   if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'Space'].includes(key)) {
     event.preventDefault();
   }
+  if (!isGameStarted) {
+    if (key === 'Space' || key === 'Enter') {
+      event.preventDefault();
+      startGame();
+    }
+    return;
+  }
+
   if (typeof gameAudio !== 'undefined') {
     gameAudio.start();
     gameAudio.startMusic();
@@ -1011,15 +1026,17 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-startBtn.addEventListener('click', () => {
+startBtn.addEventListener('click', async () => {
   if (typeof gameAudio !== 'undefined') {
     gameAudio.start();
   }
+  isGameStarted = true;
   resetGame();
-  gameAudio.startMusic();
+  await gameAudio.startMusic();
 });
 
 menuStartBtn.addEventListener('click', hidePauseMenu);
+titleStartBtn.addEventListener('click', startGame);
 
 soundBtn.addEventListener('click', () => {
   const muted = gameAudio.toggleMute();
@@ -1051,7 +1068,7 @@ window.addEventListener('error', (event) => {
   updateDebugStatus(event.message || 'unknown');
 });
 
-resetGame();
+resetGame(false);
 resizeBackground();
 window.addEventListener('resize', resizeBackground);
 window.requestAnimationFrame(function animateBackground(timestamp) {

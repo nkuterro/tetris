@@ -4,6 +4,7 @@ const gameAudio = (() => {
   let muted = false;
   let volume = 1;
   let musicTimer = null;
+  let musicStarting = false;
   let musicStep = 0;
   let musicLevel = 1;
   let nextMusicTime = 0;
@@ -37,6 +38,24 @@ const gameAudio = (() => {
       { root: 34, notes: [58, 62, 65, 68] },
       { root: 31, notes: [55, 58, 62, 65] },
       { root: 36, notes: [48, 51, 55, 60] }
+    ],
+    pattern2: [
+      { root: 36, notes: [48, 51, 55, 58] },
+      { root: 39, notes: [51, 55, 58, 62] },
+      { root: 41, notes: [53, 56, 60, 63] },
+      { root: 34, notes: [58, 62, 65, 68] }
+    ],
+    pattern3: [
+      { root: 36, notes: [48, 55, 60, 63] },
+      { root: 33, notes: [45, 52, 57, 60] },
+      { root: 38, notes: [50, 57, 62, 65] },
+      { root: 41, notes: [53, 60, 65, 68] }
+    ],
+    pattern4: [
+      { root: 36, notes: [48, 51, 55, 62] },
+      { root: 31, notes: [43, 50, 55, 58] },
+      { root: 33, notes: [45, 52, 57, 60] },
+      { root: 34, notes: [46, 53, 58, 62] }
     ]
   };
   const minorScale = [60, 62, 63, 65, 67, 68, 70, 72, 74, 75, 77, 79];
@@ -285,7 +304,12 @@ const gameAudio = (() => {
       musicLevel = musicLevelTarget;
     }
 
-    const stepDuration = 60 / (104 + Math.min(musicLevel - 1, 10) * 4) / 4;
+    const levelNumber = Math.max(1, Math.round(musicLevelTarget));
+    const patternIndex = Math.floor((levelNumber - 1) / 5) % 5;
+    const subLevel = (levelNumber - 1) % 5;
+    const progressionKeys = ['verse', 'chorus', 'pattern2', 'pattern3', 'pattern4'];
+    const progression = chordProgressions[progressionKeys[patternIndex]];
+    const stepDuration = 60 / (104 + subLevel * 5) / 4;
     while (nextMusicTime < context.currentTime + 0.18) {
       const totalStep = musicStep % 128;
       const step = totalStep % 64;
@@ -298,11 +322,12 @@ const gameAudio = (() => {
         if (musicStep >= 256) playRiser(nextMusicTime, 0.65);
       }
 
-      const progressionName = musicPhase === 'drop' ? 'chorus' : 'verse';
-      const progression = chordProgressions[progressionName];
-      const bar = measure % progression.length;
+      const activeProgression = musicPhase === 'drop' && patternIndex === 0
+        ? chordProgressions.chorus
+        : progression;
+      const bar = measure % activeProgression.length;
       const beat = step % 8;
-      const chord = progression[bar];
+      const chord = activeProgression[bar];
       const bassLine = bassPatterns[bassPatternIndex];
       const motifPosition = Math.floor((musicStep % 16) / 2);
       const melodyStep = melodyMotif[motifPosition];
@@ -491,8 +516,16 @@ const gameAudio = (() => {
     }
   }
 
-  function startMusic() {
-    if (!ensureStarted() || musicTimer) return;
+  async function startMusic() {
+    if (!ensureStarted() || musicTimer || musicStarting) return;
+    musicStarting = true;
+    if (context.state === 'suspended') {
+      await context.resume();
+    }
+    if (musicTimer) {
+      musicStarting = false;
+      return;
+    }
     musicStep = 0;
     melodyIndex = 0;
     bassPatternIndex = 0;
@@ -502,6 +535,7 @@ const gameAudio = (() => {
     nextMusicTime = context.currentTime + 0.03;
     musicTimer = window.setInterval(scheduleMusic, 80);
     scheduleMusic();
+    musicStarting = false;
   }
 
   function stopMusic() {
