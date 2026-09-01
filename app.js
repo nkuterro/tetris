@@ -20,7 +20,7 @@ const menuStartBtn = document.getElementById('menu-start-btn');
 const gameShell = document.querySelector('.game-shell');
 const volumeSlider = document.getElementById('volume-slider');
 const volumeValue = document.getElementById('volume-value');
-const touchButtons = document.querySelectorAll('.touch-btn');
+const actionButtons = document.querySelectorAll('[data-action]');
 const debugStatus = document.getElementById('debug-status');
 
 const COLORS = {
@@ -698,7 +698,7 @@ volumeSlider.addEventListener('input', () => {
   gameAudio.preview(volume / 150);
 });
 
-touchButtons.forEach((button) => {
+actionButtons.forEach((button) => {
   button.addEventListener('pointerdown', (event) => {
     event.preventDefault();
     gameAudio.start();

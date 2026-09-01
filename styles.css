@@ -117,6 +117,11 @@ body {
   border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
+.hold-side {
+  flex: 0 0 120px;
+  margin-top: 0;
+}
+
 .game-column {
   display: flex;
   flex-direction: column;
@@ -149,6 +154,8 @@ canvas {
   grid-template-rows: repeat(3, minmax(40px, 1fr));
   gap: 8px;
   width: var(--board-width);
+  max-width: 220px;
+  margin: 0 auto;
 }
 
 .touch-btn {
@@ -183,21 +190,6 @@ canvas {
 .dpad-right {
   grid-column: 3;
   grid-row: 2;
-}
-
-.action-drop {
-  grid-column: 4;
-  grid-row: 1;
-}
-
-.action-hold {
-  grid-column: 4;
-  grid-row: 2;
-}
-
-.action-pause {
-  grid-column: 4;
-  grid-row: 3;
 }
 
 .touch-btn:active {
@@ -277,6 +269,17 @@ h2 {
   font-size: 0.87rem;
 }
 
+.quick-actions {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.quick-btn {
+  padding: 8px 6px;
+  font-size: 0.78rem;
+}
+
 button {
   width: 100%;
   border: none;
@@ -324,7 +327,7 @@ button:active {
   }
 
   .game-shell {
-    --board-width: min(300px, calc(100vw - 176px), calc((100svh - 24px) / 2));
+    --board-width: min(300px, calc(100vw - 244px), calc((100svh - 24px) / 2));
     align-items: flex-start;
     gap: 10px;
     width: min(100%, 760px);
@@ -333,9 +336,13 @@ button:active {
   }
 
   .sidebar {
-    width: 140px;
-    flex: 0 0 140px;
+    width: 110px;
+    flex: 0 0 110px;
     gap: 8px;
+  }
+
+  .hold-side {
+    flex-basis: 82px;
   }
 
   .touch-controls {
@@ -386,6 +393,14 @@ button:active {
     width: 80px;
     height: 80px;
   }
+
+  .hold-side {
+    padding: 8px 4px;
+  }
+
+  .hold-side h2 {
+    font-size: 0.65rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -394,7 +409,7 @@ button:active {
   }
 
   .game-shell {
-    --board-width: min(300px, calc(100vw - 164px), calc((100svh - 24px) / 2));
+    --board-width: min(300px, calc(100vw - 224px), calc((100svh - 24px) / 2));
     padding: 6px;
     gap: 8px;
   }
@@ -404,8 +419,17 @@ button:active {
   }
 
   .sidebar {
-    width: 132px;
-    flex-basis: 132px;
+    width: 100px;
+    flex-basis: 100px;
+  }
+
+  .hold-side {
+    flex-basis: 72px;
+  }
+
+  .hold-side #hold {
+    width: 64px;
+    height: 64px;
   }
 }
 
