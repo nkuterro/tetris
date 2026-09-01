@@ -110,11 +110,11 @@ const gameAudio = (() => {
     },
     {
       leadType: 'sawtooth',
-      bassType: 'sawtooth',
-      leadOctave: 24,
+      bassType: 'triangle',
+      leadOctave: 12,
       bassFilter: 620,
-      leadFilterQ: 2.4,
-      scale: [60, 61, 63, 65, 67, 68, 70, 72],
+      leadFilterQ: 1.1,
+      scale: [60, 63, 65, 67, 70, 72],
       bassBeats: [0, 2, 5, 7],
       melodyMode: 'ascending',
       kickPattern: [0, 2, 4, 6],
@@ -133,20 +133,31 @@ const gameAudio = (() => {
       hatPattern: [1, 2, 4, 5, 7]
     }
   ];
-  function getMelodyStep(style, position, chord, step) {
+  function getCompatibleScale(style, chord) {
+    const chordPitchClasses = new Set(chord.notes.map((note) => note % 12));
+    const compatible = style.scale.filter((note) => chordPitchClasses.has(note % 12));
+    return compatible.length >= 2 ? compatible : style.scale;
+  }
+
+  function getMelodyMidi(style, position, chord, step) {
+    const compatibleScale = getCompatibleScale(style, chord);
     if (style.melodyMode === 'arp') {
-      return chord.notes[(Math.floor(step / 2) + position) % chord.notes.length] - 48;
+      return chord.notes[(Math.floor(step / 2) + position) % chord.notes.length] + style.leadOctave;
     }
     if (style.melodyMode === 'syncopated') {
-      return [0, 3, 5, 2, 6, 4, 1, 5][(position + Math.floor(step / 4)) % 8];
+      const index = [0, 2, 3, 1, 4, 3, 0, 2][(position + Math.floor(step / 4)) % 8];
+      return compatibleScale[index % compatibleScale.length] + style.leadOctave;
     }
     if (style.melodyMode === 'ascending') {
-      return [0, 1, 2, 4, 5, 7, 6, 4][(position + Math.floor(step / 8)) % 8];
+      const index = [0, 1, 2, 3, 4, 5, 4, 2][(position + Math.floor(step / 8)) % 8];
+      return compatibleScale[index % compatibleScale.length] + style.leadOctave;
     }
     if (style.melodyMode === 'sparse') {
-      return [0, -1, 4, -1, 2, -1, 5, 1][position % 8];
+      const index = [0, -1, 3, -1, 1, -1, 4, 2][position % 8];
+      return index < 0 ? null : compatibleScale[index % compatibleScale.length] + style.leadOctave;
     }
-    return melodyMotif[position];
+    const index = melodyMotif[position] % compatibleScale.length;
+    return compatibleScale[index] + style.leadOctave;
   }
   const melodyTransitions = {
     0: [0, 1, 2, 4, 5],
@@ -424,8 +435,7 @@ const gameAudio = (() => {
       const chord = activeProgression[bar];
       const bassLine = bassPatterns[bassPatternIndex];
       const motifPosition = Math.floor((musicStep % 16) / 2);
-      const melodyStep = getMelodyStep(style, motifPosition, chord, musicStep);
-      const melodyMidi = (style.scale[melodyStep] || style.scale[0]) + style.leadOctave;
+      const melodyMidi = getMelodyMidi(style, motifPosition, chord, musicStep);
       const bassMidi = chord.root + bassLine[beat];
       const melodyActive = musicPhase !== 'break' || musicState.danger > 0.55;
       const padActive = musicPhase !== 'groove' || musicLevel >= 2;
@@ -507,11 +517,12 @@ const gameAudio = (() => {
         allowMelody &&
         melodyActive &&
         (style.melodyMode === 'sparse'
-          ? melodyStep >= 0 && (beat === 0 || beat === 4 || dropActive)
+          ? melodyMidi !== null && (beat === 0 || beat === 4 || dropActive)
           : style.melodyMode === 'syncopated'
             ? beat === 1 || beat === 3 || beat === 6
             : musicStep % 2 === 0 || (dropActive && musicStep % 3 === 0)) &&
-        !isMotifRest
+        !isMotifRest &&
+        melodyMidi !== null
       ) {
         playSynthLead(
           melodyMidi,
