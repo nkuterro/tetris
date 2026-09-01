@@ -19,12 +19,20 @@ const gameAudio = (() => {
   };
 
   const midiToFreq = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
-  const chordProgression = [
-    { root: 36, notes: [48, 51, 55, 58] },
-    { root: 32, notes: [56, 60, 63, 67] },
-    { root: 41, notes: [53, 56, 60, 63] },
-    { root: 43, notes: [55, 59, 62, 65] }
-  ];
+  const chordProgressions = {
+    verse: [
+      { root: 36, notes: [48, 51, 55, 58] },
+      { root: 32, notes: [56, 60, 63, 67] },
+      { root: 41, notes: [53, 56, 60, 63] },
+      { root: 43, notes: [55, 59, 62, 65] }
+    ],
+    chorus: [
+      { root: 32, notes: [56, 60, 63, 67] },
+      { root: 34, notes: [58, 62, 65, 68] },
+      { root: 31, notes: [55, 58, 62, 65] },
+      { root: 36, notes: [48, 51, 55, 60] }
+    ]
+  };
   const minorScale = [60, 62, 63, 65, 67, 68, 70, 72, 74, 75, 77, 79];
   const bassPatterns = [
     [0, 0, 7, 5, 0, 3, 5, 7],
@@ -125,6 +133,22 @@ const gameAudio = (() => {
     source.start(when);
   }
 
+  function playKick(when, gainValue = 0.12) {
+    if (!context || !musicFilter) return;
+
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(125, when);
+    oscillator.frequency.exponentialRampToValueAtTime(34, when + 0.085);
+    gain.gain.setValueAtTime(gainValue, when);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.11);
+    oscillator.connect(gain);
+    gain.connect(getMusicOutput(0));
+    oscillator.start(when);
+    oscillator.stop(when + 0.13);
+  }
+
   function scheduleMusic() {
     if (!context || !musicTimer) return;
 
@@ -139,9 +163,12 @@ const gameAudio = (() => {
     while (nextMusicTime < context.currentTime + 0.18) {
       const step = musicStep % 64;
       const measure = Math.floor(step / 8);
-      const bar = measure % chordProgression.length;
+      const progressionName =
+        musicState.danger > 0.62 || musicLevel >= 4 ? 'chorus' : 'verse';
+      const progression = chordProgressions[progressionName];
+      const bar = measure % progression.length;
       const beat = step % 8;
-      const chord = chordProgression[bar];
+      const chord = progression[bar];
       const phrase = Math.floor(musicStep / 64) % melodyPatterns.length;
       const pattern = melodyPatterns[phrase];
       const bassLine = bassPatterns[phrase];
@@ -149,12 +176,24 @@ const gameAudio = (() => {
       const melodyMidi = minorScale[melodyIndex] + 12;
       const bassMidi = chord.root + bassLine[beat];
       const section = Math.floor(musicStep / 64) % 4;
-      const melodyActive = section !== 1 || musicState.danger > 0.55;
-      const padActive = section !== 0 || musicLevel >= 2;
+      const phase = musicState.danger > 0.62 || musicLevel >= 4
+        ? 'drop'
+        : musicState.danger > 0.35 || musicLevel >= 2
+          ? 'build'
+          : section % 2 === 0
+            ? 'groove'
+            : 'break';
+      const melodyActive = phase !== 'break' || musicState.danger > 0.55;
+      const padActive = phase !== 'groove' || musicLevel >= 2;
+      const dropActive = phase === 'drop';
+      const buildActive = phase === 'build';
 
       if (beat === 0 || beat === 3 || beat === 6) {
         playMusicTone(midiToFreq(bassMidi - 12), 0.24, 'sine', musicLevel, nextMusicTime, 0.13, -0.18);
         playMusicTone(midiToFreq(bassMidi), 0.16, 'triangle', musicLevel, nextMusicTime, 0.04, -0.1);
+      }
+      if (dropActive ? beat % 2 === 0 : beat === 0) {
+        playKick(nextMusicTime, dropActive ? 0.17 : 0.12);
       }
       if (beat === 0 && padActive) {
         playChordPad(chord, nextMusicTime, musicLevel);
@@ -167,6 +206,13 @@ const gameAudio = (() => {
       }
       if (melodyActive && musicStep % 2 === 0) {
         playSynthLead(melodyMidi, 0.12, nextMusicTime, Math.sin(musicStep * 0.7) * 0.4, musicLevel >= 3 ? 0.034 : 0.026);
+      }
+      if (dropActive && musicStep % 2 === 1) {
+        const arpMidi = chord.notes[(musicStep + beat) % chord.notes.length] + 12;
+        playSynthLead(arpMidi, 0.06, nextMusicTime, Math.sin(musicStep) * 0.5, 0.022);
+      }
+      if (buildActive && beat >= 4 && musicStep % 2 === 0) {
+        playMusicNoise(0.035, nextMusicTime, 0.035 + (beat - 4) * 0.01, 0);
       }
       if (musicLevel >= 2 && (beat === 3 || (musicState.danger > 0.75 && beat === 7))) {
         playSynthLead(chord.notes[2] + 12, 0.1, nextMusicTime, 0.35, 0.016);
