@@ -287,13 +287,15 @@ const gameAudio = (() => {
 
     const stepDuration = 60 / (104 + Math.min(musicLevel - 1, 10) * 4) / 4;
     while (nextMusicTime < context.currentTime + 0.18) {
-      const step = musicStep % 64;
+      const totalStep = musicStep % 128;
+      const step = totalStep % 64;
       const measure = Math.floor(step / 8);
-      if (step === 0) {
+      const macroMeasure = Math.floor(totalStep / 8);
+      if (totalStep === 0) {
         musicPhase = chooseNextSection();
         bassPatternIndex = (bassPatternIndex + 1 + Math.floor(Math.random() * 2)) % bassPatterns.length;
         if (musicPhase !== 'break') createMotif();
-        if (musicStep === 192) playRiser(nextMusicTime, 0.65);
+        if (musicStep >= 256) playRiser(nextMusicTime, 0.65);
       }
 
       const progressionName = musicPhase === 'drop' ? 'chorus' : 'verse';
@@ -316,25 +318,31 @@ const gameAudio = (() => {
       const allowMelody = musicStep >= 64;
       const allowSnare = musicStep >= 128;
       const allowKick = musicStep >= 192 || dropActive;
+      const isTransitionBar = macroMeasure === 15;
+      const isDropPreBreak = isTransitionBar && beat >= 6;
+      const allowPad = !isDropPreBreak;
+      const allowLowEnd = !isDropPreBreak;
+      const allowArp = musicStep >= 320 && macroMeasure >= 4 && !isDropPreBreak;
+      const introLayer = Math.min(1, musicStep / 256);
 
-      if (allowBass && (beat === 0 || beat === 3 || beat === 6 || (dropActive && beat === 7))) {
+      if (allowBass && allowLowEnd && (beat === 0 || beat === 3 || beat === 6 || (dropActive && beat === 7))) {
         const bassDuration = beat === 0 || dropActive ? 0.34 : 0.22;
-        playBassSynth(bassMidi, bassDuration, nextMusicTime, dropActive ? 0.15 : 0.12);
-        playSubBass(bassMidi - 12, bassDuration + 0.04, nextMusicTime, dropActive ? 0.2 : 0.16);
+        playBassSynth(bassMidi, bassDuration, nextMusicTime, dropActive ? 0.11 : 0.09);
+        playSubBass(bassMidi - 12, bassDuration + 0.04, nextMusicTime, dropActive ? 0.14 : 0.1);
       }
-      if (allowBass && (beat === 1 || beat === 5 || (dropActive && beat === 7))) {
-        playBassSynth(bassMidi, 0.13, nextMusicTime, 0.055);
+      if (allowBass && allowLowEnd && (beat === 1 || beat === 5 || (dropActive && beat === 7))) {
+        playBassSynth(bassMidi, 0.13, nextMusicTime, 0.04);
       }
       if (!intro && dropActive && musicStep % 3 === 1) {
         playMusicTone(midiToFreq(chord.root - 12), 0.12, 'sine', musicLevel, nextMusicTime, 0.055, -0.25);
       }
-      if (allowKick && (dropActive ? beat % 2 === 0 : beat === 0)) {
+      if (allowKick && !isDropPreBreak && (dropActive ? beat % 2 === 0 : beat === 0)) {
         playKick(nextMusicTime, dropActive ? 0.17 : 0.12);
       }
-      if (padActive && (beat === 0 || beat === 3 || beat === 6)) {
+      if (allowPad && padActive && (beat === 0 || beat === 3 || beat === 6)) {
         const padDuration = beat === 0 ? 0.55 : 0.18;
         const padScale = beat === 0
-          ? (intro ? 0.45 : 0.82)
+          ? (intro ? 0.45 : 0.82) * Math.max(0.65, introLayer)
           : (dropActive ? 0.65 : 0.48);
         playChordPad(chord, nextMusicTime, musicLevel, padScale, padDuration);
       }
@@ -370,6 +378,19 @@ const gameAudio = (() => {
       }
       if (buildActive && beat >= 4 && musicStep % 2 === 0) {
         playMusicNoise(0.035, nextMusicTime, 0.035 + (beat - 4) * 0.01, 0);
+      }
+      if (buildActive && isTransitionBar && beat >= 4 && musicStep % 2 === 0) {
+        playMusicNoise(0.028, nextMusicTime, 0.04 + (beat - 4) * 0.012, 0);
+      }
+      if (allowArp && musicStep % 2 === 0) {
+        const arpMidi = chord.notes[(Math.floor(musicStep / 2) + macroMeasure) % chord.notes.length] + 12;
+        playSynthLead(
+          arpMidi,
+          0.08,
+          nextMusicTime,
+          musicStep % 4 === 0 ? 0.3 : -0.3,
+          dropActive ? 0.022 : 0.014
+        );
       }
       if (allowMelody && musicLevel >= 2 && (beat === 3 || (musicState.danger > 0.75 && beat === 7))) {
         playSynthLead(chord.notes[2] + 12, 0.1, nextMusicTime, 0.35, 0.016);
