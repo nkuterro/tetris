@@ -15,6 +15,8 @@ const gameAudio = (() => {
   let melodyIndex = 0;
   let bassPatternIndex = 0;
   let musicPhase = 'groove';
+  let melodyMotif = [0, 2, 4, 2, 5, 4, 2, 1];
+  let motifRestMask = [false, false, false, true, false, false, true, false];
   let musicState = {
     danger: 0,
     clearedLines: 0,
@@ -59,6 +61,27 @@ const gameAudio = (() => {
     const options = melodyTransitions[melodyIndex] || [0, 2, 4];
     melodyIndex = options[Math.floor(Math.random() * options.length)];
     return melodyIndex;
+  }
+
+  function createMotif() {
+    const nextMotif = melodyMotif.slice();
+    const changes = musicState.danger > 0.65 ? 2 : 1;
+
+    for (let i = 0; i < changes; i += 1) {
+      const position = 1 + Math.floor(Math.random() * (nextMotif.length - 2));
+      const previous = nextMotif[position - 1];
+      const options = melodyTransitions[previous] || [0, 2, 4];
+      nextMotif[position] = options[Math.floor(Math.random() * options.length)];
+    }
+
+    nextMotif[0] = melodyMotif[0];
+    nextMotif[nextMotif.length - 1] = melodyMotif[melodyMotif.length - 1];
+    melodyMotif = nextMotif;
+    motifRestMask = nextMotif.map((_, index) => (
+      index === 0 || index === nextMotif.length - 1
+        ? false
+        : Math.random() < (musicState.danger > 0.65 ? 0.12 : 0.22)
+    ));
   }
 
   function chooseNextSection() {
@@ -213,7 +236,7 @@ const gameAudio = (() => {
       if (step === 0) {
         musicPhase = chooseNextSection();
         bassPatternIndex = (bassPatternIndex + 1 + Math.floor(Math.random() * 2)) % bassPatterns.length;
-        if (musicPhase !== 'break') chooseNextMelodyIndex();
+        if (musicPhase !== 'break') createMotif();
         if (musicStep === 192) playRiser(nextMusicTime, 0.65);
       }
 
@@ -223,9 +246,8 @@ const gameAudio = (() => {
       const beat = step % 8;
       const chord = progression[bar];
       const bassLine = bassPatterns[bassPatternIndex];
-      const melodyStep = (musicStep + beat) % 3 === 0
-        ? chooseNextMelodyIndex()
-        : melodyIndex;
+      const motifPosition = Math.floor((musicStep % 16) / 2);
+      const melodyStep = melodyMotif[motifPosition];
       const melodyMidi = minorScale[melodyStep] + 12;
       const bassMidi = chord.root + bassLine[beat];
       const melodyActive = musicPhase !== 'break' || musicState.danger > 0.55;
@@ -258,8 +280,22 @@ const gameAudio = (() => {
       if (allowHihat && (musicStep % 2 === 0 || (musicLevel >= 3 && beat === 3))) {
         playMusicNoise(0.025, nextMusicTime, musicLevel >= 3 ? 0.024 : 0.014, -0.35);
       }
-      if (allowMelody && melodyActive && (musicStep % 2 === 0 || (dropActive && musicStep % 3 === 0))) {
-        playSynthLead(melodyMidi, 0.12, nextMusicTime, Math.sin(musicStep * 0.7) * 0.4, musicLevel >= 3 ? 0.034 : 0.026);
+      const isMotifRest = motifRestMask[motifPosition];
+      const isPhraseEnd = motifPosition === melodyMotif.length - 1 || beat === 7;
+      const melodyDuration = isPhraseEnd ? 0.34 : beat === 0 ? 0.2 : 0.14;
+      if (
+        allowMelody &&
+        melodyActive &&
+        (musicStep % 2 === 0 || (dropActive && musicStep % 3 === 0)) &&
+        !isMotifRest
+      ) {
+        playSynthLead(
+          melodyMidi,
+          melodyDuration,
+          nextMusicTime,
+          Math.sin(musicStep * 0.7) * 0.4,
+          musicLevel >= 3 ? 0.034 : 0.026
+        );
       }
       if (dropActive && musicStep % 2 === 1) {
         const arpMidi = chord.notes[(musicStep + beat) % chord.notes.length] + 12;
@@ -369,7 +405,9 @@ const gameAudio = (() => {
     musicStep = 0;
     melodyIndex = 0;
     bassPatternIndex = 0;
-    musicPhase = 'groove';
+    musicPhase = 'intro';
+    melodyMotif = [0, 2, 4, 2, 5, 4, 2, 1];
+    motifRestMask = [false, false, false, true, false, false, true, false];
     nextMusicTime = context.currentTime + 0.03;
     musicTimer = window.setInterval(scheduleMusic, 80);
     scheduleMusic();
