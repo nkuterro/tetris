@@ -5,6 +5,7 @@
   --text: #e2e8f0;
   --muted: #94a3b8;
   --accent: #22d3ee;
+  --level-hue: 190;
   --shadow: rgba(15, 23, 42, 0.55);
 }
 
@@ -165,11 +166,11 @@ canvas {
 
 .touch-controls {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  grid-template-rows: repeat(3, minmax(40px, 1fr));
+  grid-template-columns: repeat(5, 52px);
+  grid-template-rows: repeat(3, 52px);
   gap: 8px;
-  width: var(--board-width);
-  max-width: 300px;
+  width: 292px;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -177,12 +178,17 @@ canvas {
   appearance: none;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(145deg, rgba(34, 211, 238, 0.24), rgba(59, 130, 246, 0.16));
+  background: linear-gradient(
+    145deg,
+    hsl(var(--level-hue) 85% 58% / 0.3),
+    hsl(calc(var(--level-hue) + 45) 80% 55% / 0.18)
+  );
   color: var(--text);
   font-size: 1.25rem;
   font-weight: 700;
-  min-height: 56px;
-  border: 1px solid rgba(103, 232, 249, 0.28);
+  min-height: 0;
+  height: 52px;
+  border: 1px solid hsl(var(--level-hue) 90% 75% / 0.42);
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
@@ -222,8 +228,8 @@ canvas {
 
 .touch-btn:active {
   transform: scale(0.98);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.7);
-  background: rgba(34, 211, 238, 0.35);
+  box-shadow: 0 0 16px hsl(var(--level-hue) 90% 65% / 0.8);
+  background: hsl(var(--level-hue) 85% 58% / 0.42);
 }
 
 .sidebar {
@@ -277,8 +283,8 @@ h2 {
 
 .stats strong {
   font-size: 1.05rem;
-  color: #67e8f9;
-  text-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+  color: hsl(var(--level-hue) 90% 75%);
+  text-shadow: 0 0 10px hsl(var(--level-hue) 90% 60% / 0.72);
 }
 
 .preview-card {
@@ -382,13 +388,16 @@ button:active {
   }
 
   .touch-controls {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(5, 48px);
+    grid-template-rows: repeat(3, 48px);
     gap: 7px;
-    max-width: 300px;
+    width: 268px;
+    max-width: none;
   }
 
   .touch-btn {
-    min-height: 52px;
+    min-height: 0;
+    height: 48px;
     padding: 7px 2px;
     font-size: 1.05rem;
   }

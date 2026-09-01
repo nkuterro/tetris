@@ -125,7 +125,11 @@ function drawBackground(timestamp) {
   const width = window.innerWidth;
   const height = window.innerHeight;
   const time = timestamp * 0.001;
-  const danger = Math.min(1, (level - 1) / 8);
+  const levelIndex = Math.max(0, level - 1);
+  const hue = (190 + levelIndex * 31) % 360;
+  const pattern = Math.floor(levelIndex / 2) % 4;
+  const intensity = Math.min(0.9, 0.28 + levelIndex * 0.035);
+  document.documentElement.style.setProperty('--level-hue', hue);
 
   bgCtx.clearRect(0, 0, width, height);
   const gradient = bgCtx.createRadialGradient(
@@ -136,29 +140,42 @@ function drawBackground(timestamp) {
     height * 0.5,
     Math.max(width, height) * 0.75
   );
-  gradient.addColorStop(0, danger > 0.5 ? 'rgba(76, 29, 55, 0.42)' : 'rgba(15, 53, 78, 0.42)');
+  gradient.addColorStop(0, `hsla(${hue}, 80%, 35%, ${intensity})`);
   gradient.addColorStop(1, 'rgba(2, 8, 23, 0.96)');
   bgCtx.fillStyle = gradient;
   bgCtx.fillRect(0, 0, width, height);
 
-  for (let wave = 0; wave < 4; wave += 1) {
+  for (let wave = 0; wave < 5; wave += 1) {
     bgCtx.beginPath();
     for (let x = -20; x <= width + 20; x += 14) {
       const y = height * (0.2 + wave * 0.2)
-        + Math.sin(x * 0.006 + time * (0.42 + wave * 0.08)) * (18 + danger * 22)
-        + Math.cos(x * 0.012 - time * 0.24) * 10;
+        + Math.sin(x * (0.004 + pattern * 0.001) + time * (0.42 + wave * 0.08)) * (24 + levelIndex * 2)
+        + Math.cos(x * 0.012 - time * (0.24 + pattern * 0.05)) * 14;
       if (x === -20) bgCtx.moveTo(x, y);
       else bgCtx.lineTo(x, y);
     }
-    bgCtx.shadowColor = wave % 2 === 0 ? '#22d3ee' : '#a78bfa';
-    bgCtx.shadowBlur = 12;
+    const waveHue = (hue + wave * 38 + pattern * 18) % 360;
+    bgCtx.shadowColor = `hsl(${waveHue} 90% 65%)`;
+    bgCtx.shadowBlur = 16;
     bgCtx.strokeStyle = wave % 2 === 0
-      ? `rgba(34, 211, 238, ${0.13 + danger * 0.06})`
-      : `rgba(167, 139, 250, ${0.1 + danger * 0.05})`;
-    bgCtx.lineWidth = 2;
+      ? `hsla(${waveHue}, 90%, 65%, ${0.2 + intensity * 0.18})`
+      : `hsla(${waveHue}, 90%, 72%, ${0.14 + intensity * 0.14})`;
+    bgCtx.lineWidth = 2.2;
     bgCtx.stroke();
     bgCtx.shadowBlur = 0;
   }
+
+  bgCtx.save();
+  bgCtx.globalAlpha = 0.12 + intensity * 0.12;
+  bgCtx.strokeStyle = `hsl(${(hue + 120) % 360} 90% 65%)`;
+  bgCtx.lineWidth = 1;
+  for (let ring = 0; ring < 4; ring += 1) {
+    const radius = 80 + ring * 110 + ((time * (18 + pattern * 7)) % 110);
+    bgCtx.beginPath();
+    bgCtx.arc(width * 0.5, height * 0.52, radius, 0, Math.PI * 2);
+    bgCtx.stroke();
+  }
+  bgCtx.restore();
 }
 
 function shuffle(array) {
