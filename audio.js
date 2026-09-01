@@ -11,6 +11,7 @@ const gameAudio = (() => {
   let musicDelay = null;
   let musicFeedback = null;
   let musicFilter = null;
+  let musicLevelTarget = 1;
   let musicState = {
     danger: 0,
     clearedLines: 0,
@@ -26,6 +27,18 @@ const gameAudio = (() => {
   ];
   const scale = [1, 1.1225, 1.1892, 1.3348, 1.4983, 1.6818, 1.7818, 2, 2.2449];
   const bassPattern = [0, 0, 7, 5, 0, 3, 5, 7];
+  const bassVariations = [
+    [0, 0, 7, 5, 0, 3, 5, 7],
+    [0, 5, 7, 5, 0, 7, 5, 3],
+    [0, 0, 5, 7, 0, 3, 7, 5],
+    [0, 7, 5, 3, 0, 5, 7, 3]
+  ];
+  const melodyPatterns = [
+    [0, 2, 4, 2, 5, 4, 2, 1],
+    [4, 2, 5, 7, 4, 2, 1, 2],
+    [0, 4, 2, 5, 7, 5, 4, 2],
+    [5, 4, 2, 1, 2, 4, 5, 7]
+  ];
 
   function getMusicOutput(pan = 0) {
     const panner = context.createStereoPanner();
@@ -40,7 +53,7 @@ const gameAudio = (() => {
     const oscillator = context.createOscillator();
     const gain = context.createGain();
     oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency * (1 + Math.min(level - 1, 10) * 0.008), when);
+    oscillator.frequency.setValueAtTime(frequency, when);
     gain.gain.setValueAtTime(0.0001, when);
     gain.gain.exponentialRampToValueAtTime(gainValue, when + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
@@ -89,6 +102,13 @@ const gameAudio = (() => {
   function scheduleMusic() {
     if (!context || !musicTimer) return;
 
+    if (Math.abs(musicLevel - musicLevelTarget) > 0.01) {
+      musicLevel += (musicLevelTarget - musicLevel) * 0.08;
+      updateMusicFilter();
+    } else {
+      musicLevel = musicLevelTarget;
+    }
+
     const stepDuration = 60 / (104 + Math.min(musicLevel - 1, 10) * 4) / 4;
     while (nextMusicTime < context.currentTime + 0.18) {
       const step = musicStep % 32;
@@ -96,13 +116,17 @@ const gameAudio = (() => {
       const beat = step % 8;
       const root = chordRoots[bar];
       const voicing = chordVoicings[bar];
+      const phrase = Math.floor(musicStep / 32) % melodyPatterns.length;
+      const pattern = melodyPatterns[phrase];
+      const bassLine = bassVariations[phrase];
       const tension = musicState.danger > 0.65 ? 1 : 0;
-      const noteIndex = (musicStep * 3 + musicLevel + tension) % scale.length;
+      const noteIndex = (pattern[beat] + tension) % scale.length;
       const note = root * scale[noteIndex] * 2;
-      const bassNote = root * scale[bassPattern[beat] % scale.length] / 2;
+      const bassNote = root * scale[bassLine[beat] % scale.length] / 2;
 
       if (beat === 0 || beat === 3 || beat === 6) {
-        playMusicTone(bassNote, 0.2, 'sine', musicLevel, nextMusicTime, 0.08, -0.15);
+        playMusicTone(bassNote / 2, 0.24, 'sine', musicLevel, nextMusicTime, 0.11, -0.18);
+        playMusicTone(bassNote, 0.16, 'triangle', musicLevel, nextMusicTime, 0.045, -0.1);
       }
       if (beat === 0 || (bar % 2 === 1 && beat === 4)) {
         playMusicChord(root, voicing, nextMusicTime, musicLevel);
@@ -114,7 +138,7 @@ const gameAudio = (() => {
         playMusicNoise(0.025, nextMusicTime, musicLevel >= 3 ? 0.024 : 0.014, -0.35);
       }
       if (musicStep % 2 === 0) {
-        playMusicTone(note, 0.12, 'sawtooth', musicLevel, nextMusicTime, 0.026, Math.sin(musicStep) * 0.4);
+        playMusicTone(note, 0.12, musicLevel >= 3 ? 'square' : 'sawtooth', musicLevel, nextMusicTime, 0.026, Math.sin(musicStep) * 0.4);
       }
       if (musicLevel >= 2 && (beat === 3 || (musicState.danger > 0.75 && beat === 7))) {
         playMusicTone(root * 4, 0.1, 'square', musicLevel, nextMusicTime, 0.016, 0.35);
@@ -228,7 +252,7 @@ const gameAudio = (() => {
   }
 
   function setMusicLevel(level) {
-    musicLevel = Math.max(1, Number(level) || 1);
+    musicLevelTarget = Math.max(1, Number(level) || 1);
     updateMusicFilter();
   }
 
