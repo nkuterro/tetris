@@ -7,12 +7,32 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <main id="menu-screen" class="menu-screen">
+      <div class="menu-card">
+        <p class="eyebrow">WEB AUDIO EDITION</p>
+        <h1>Tetris</h1>
+        <p class="menu-description">落ちてくるミノを揃えて、音と一緒にプレイしよう。</p>
+        <button id="menu-start-btn" type="button">Start Game</button>
+        <div class="audio-settings">
+          <div class="setting-heading">
+            <span>Sound</span>
+            <button id="sound-btn" class="sound-btn" type="button">ON</button>
+          </div>
+          <label class="volume-control" for="volume-slider">
+            <span>Volume</span>
+            <output id="volume-value" for="volume-slider">70%</output>
+          </label>
+          <input id="volume-slider" type="range" min="0" max="100" value="70" />
+        </div>
+        <p class="menu-hint">PC: Arrow keys / Space &nbsp;|&nbsp; Mobile: touch buttons</p>
+      </div>
+    </main>
+
     <div class="game-shell">
       <div class="game-column">
         <div class="panel">
           <canvas id="game" width="300" height="600" aria-label="Tetris game board"></canvas>
         </div>
-        <div id="debug-status" class="debug-status" aria-live="polite">診断: 初期化中</div>
 
         <div class="touch-controls" aria-label="Touch controls">
           <button type="button" class="touch-btn" data-action="left">◀</button>
@@ -55,7 +75,6 @@
             <li>P : pause</li>
           </ul>
           <button id="start-btn" type="button">Start / Restart</button>
-          <button id="sound-btn" class="sound-btn" type="button">Sound: ON</button>
         </div>
       </aside>
     </div>

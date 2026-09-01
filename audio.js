@@ -2,6 +2,7 @@ const gameAudio = (() => {
   let context = null;
   let masterGain = null;
   let muted = false;
+  let volume = 0.7;
 
   function ensureStarted() {
     if (!context) {
@@ -9,7 +10,7 @@ const gameAudio = (() => {
       if (!AudioContextClass) return false;
       context = new AudioContextClass();
       masterGain = context.createGain();
-      masterGain.gain.value = 0.18;
+      masterGain.gain.value = volume;
       masterGain.connect(context.destination);
     }
 
@@ -64,7 +65,14 @@ const gameAudio = (() => {
   function setMuted(value) {
     muted = value;
     if (masterGain) {
-      masterGain.gain.setTargetAtTime(muted ? 0 : 0.18, context.currentTime, 0.02);
+      masterGain.gain.setTargetAtTime(muted ? 0 : volume, context.currentTime, 0.02);
+    }
+  }
+
+  function setVolume(value) {
+    volume = Math.max(0, Math.min(1, value));
+    if (masterGain && !muted) {
+      masterGain.gain.setTargetAtTime(volume, context.currentTime, 0.02);
     }
   }
 
@@ -77,6 +85,7 @@ const gameAudio = (() => {
     isMuted() {
       return muted;
     },
+    setVolume,
     move() {
       tone(180, 0.035, 'square', 0.045, 230);
     },

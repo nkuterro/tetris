@@ -15,6 +15,11 @@ const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
 const startBtn = document.getElementById('start-btn');
 const soundBtn = document.getElementById('sound-btn');
+const menuScreen = document.getElementById('menu-screen');
+const menuStartBtn = document.getElementById('menu-start-btn');
+const gameShell = document.querySelector('.game-shell');
+const volumeSlider = document.getElementById('volume-slider');
+const volumeValue = document.getElementById('volume-value');
 const touchButtons = document.querySelectorAll('.touch-btn');
 const debugStatus = document.getElementById('debug-status');
 
@@ -479,6 +484,14 @@ function resetGame() {
     dropTimerId = null;
   }
 
+  function startGame() {
+    gameAudio.start();
+    menuScreen.classList.remove('is-visible');
+    menuScreen.hidden = true;
+    gameShell.classList.add('is-visible');
+    resetGame();
+  }
+
   if (clearTimeoutId) {
     clearTimeout(clearTimeoutId);
     clearTimeoutId = null;
@@ -655,9 +668,17 @@ startBtn.addEventListener('click', () => {
   resetGame();
 });
 
+menuStartBtn.addEventListener('click', startGame);
+
 soundBtn.addEventListener('click', () => {
   const muted = gameAudio.toggleMute();
   soundBtn.textContent = muted ? 'Sound: OFF' : 'Sound: ON';
+});
+
+volumeSlider.addEventListener('input', () => {
+  const volume = Number(volumeSlider.value);
+  gameAudio.setVolume(volume / 100);
+  volumeValue.textContent = `${volume}%`;
 });
 
 touchButtons.forEach((button) => {
@@ -673,4 +694,9 @@ window.addEventListener('error', (event) => {
 });
 
 resetGame();
+isRunning = false;
+clearInterval(dropTimerId);
+dropTimerId = null;
+menuScreen.classList.add('is-visible');
+gameShell.classList.remove('is-visible');
 requestAnimationFrame(tick);
