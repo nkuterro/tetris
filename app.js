@@ -397,16 +397,43 @@ function clearLines() {
   if (cleared === 4) {
     floatingTexts.push({ text: 'TETRIS!', x: boardCanvas.width / 2, y: boardCanvas.height / 2, color: '#facc15', scale: 0.55, alpha: 1 });
     shockwave = { radius: 20, alpha: 0.9 };
+  } else if (combo > 0) {
+    floatingTexts.push({
+      text: `COMBO x ${combo + 1}`,
+      x: boardCanvas.width / 2,
+      y: boardCanvas.height / 2 + 42,
+      color: '#fbbf24',
+      scale: 0.48,
+      alpha: 1
+    });
   }
   const lineScores = [0, 100, 300, 500, 800];
-  score += lineScores[cleared] * level;
+  const nextCombo = combo + 1;
+  score += lineScores[cleared] * level + Math.max(0, nextCombo - 1) * 50 * level;
   lines += cleared;
-  combo += 1;
+  combo = nextCombo;
+  const previousLevel = level;
   level = Math.floor(lines / LINES_PER_LEVEL) + 1;
   dropInterval = getDropInterval(level);
   gameAudio.setMusicLevel(level);
   updateMusicState(cleared);
   updateStats();
+  if (combo > 1) {
+    gameAudio.combo(combo);
+  }
+  if (level > previousLevel) {
+    floatingTexts.push({
+      text: `LEVEL ${level}!`,
+      x: boardCanvas.width / 2,
+      y: boardCanvas.height / 2 - 42,
+      color: '#67e8f9',
+      scale: 0.58,
+      alpha: 1
+    });
+    backgroundFlash = 1;
+    shakeTime = Math.max(shakeTime, 8);
+    gameAudio.levelUp(level);
+  }
   if (cleared === 4) {
     gameAudio.tetris();
   } else {

@@ -712,6 +712,22 @@ const gameAudio = (() => {
     tone(220 + value * 660, 0.12, 'triangle', 0.16, 220 + value * 660);
   }
 
+  function combo(comboCount) {
+    if (muted || !ensureStarted()) return;
+    const now = context.currentTime;
+    const frequency = 330 * Math.pow(2, Math.min(comboCount - 2, 8) / 12);
+    tone(frequency, 0.16, 'triangle', 0.1);
+    window.setTimeout(() => tone(frequency * 1.25, 0.12, 'square', 0.065), 70);
+  }
+
+  function levelUp(levelNumber) {
+    if (muted || !ensureStarted()) return;
+    const base = 260 + Math.min(levelNumber, 24) * 7;
+    tone(base, 0.18, 'sine', 0.11);
+    window.setTimeout(() => tone(base * 1.5, 0.2, 'triangle', 0.1), 90);
+    window.setTimeout(() => tone(base * 2, 0.28, 'sine', 0.08), 190);
+  }
+
   return {
     start: ensureStarted,
     toggleMute() {
@@ -724,6 +740,8 @@ const gameAudio = (() => {
     setVolume,
     setMusicVolume,
     preview,
+    combo,
+    levelUp,
     startMusic,
     stopMusic,
     setMusicLevel,
