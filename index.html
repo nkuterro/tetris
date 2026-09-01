@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tetris</title>
-    <link rel="stylesheet" href="styles.css?v=20260901-37" />
+    <link rel="stylesheet" href="styles.css?v=20260901-38" />
   </head>
   <body>
     <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -44,10 +44,15 @@
             <button id="sound-btn" class="sound-btn" type="button">ON</button>
           </div>
           <label class="volume-control" for="volume-slider">
-            <span>Volume</span>
+            <span>SE Volume</span>
             <output id="volume-value" for="volume-slider">100%</output>
           </label>
           <input id="volume-slider" type="range" min="0" max="150" value="100" />
+          <label class="volume-control" for="music-volume-slider">
+            <span>BGM Volume</span>
+            <output id="music-volume-value" for="music-volume-slider">100%</output>
+          </label>
+          <input id="music-volume-slider" type="range" min="0" max="150" value="100" />
         </div>
         <p class="menu-hint">PC: Arrow keys / Space &nbsp;|&nbsp; Mobile: touch buttons</p>
       </div>
@@ -107,7 +112,7 @@
       </aside>
     </div>
 
-    <script src="audio.js?v=20260901-37"></script>
-    <script src="app.js?v=20260901-37"></script>
+    <script src="audio.js?v=20260901-38"></script>
+    <script src="app.js?v=20260901-38"></script>
   </body>
 </html>

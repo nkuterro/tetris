@@ -29,6 +29,8 @@ const previewBackBtn = document.getElementById('preview-back-btn');
 const gameShell = document.querySelector('.game-shell');
 const volumeSlider = document.getElementById('volume-slider');
 const volumeValue = document.getElementById('volume-value');
+const musicVolumeSlider = document.getElementById('music-volume-slider');
+const musicVolumeValue = document.getElementById('music-volume-value');
 const actionButtons = document.querySelectorAll('[data-action]');
 const debugStatus = document.getElementById('debug-status');
 const bgCanvas = document.getElementById('bg-canvas');
@@ -1092,6 +1094,12 @@ volumeSlider.addEventListener('input', () => {
   volumeValue.textContent = `${volume}%`;
   gameAudio.start();
   gameAudio.preview(volume / 150);
+});
+
+musicVolumeSlider.addEventListener('input', () => {
+  const volume = Number(musicVolumeSlider.value);
+  gameAudio.setMusicVolume(volume / 100);
+  musicVolumeValue.textContent = `${volume}%`;
 });
 
 actionButtons.forEach((button) => {

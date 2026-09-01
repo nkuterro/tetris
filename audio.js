@@ -1,8 +1,11 @@
 const gameAudio = (() => {
   let context = null;
   let masterGain = null;
+  let seGain = null;
+  let musicOutputGain = null;
   let muted = false;
   let volume = 1;
+  let musicVolume = 1;
   let musicTimer = null;
   let musicStarting = false;
   let musicStep = 0;
@@ -519,11 +522,17 @@ const gameAudio = (() => {
       masterGain = context.createGain();
       masterGain.gain.value = volume;
       masterGain.connect(context.destination);
+      seGain = context.createGain();
+      seGain.gain.value = 1;
+      seGain.connect(masterGain);
+      musicOutputGain = context.createGain();
+      musicOutputGain.gain.value = musicVolume;
+      musicOutputGain.connect(masterGain);
       musicGain = context.createGain();
       musicGain.gain.value = 0.62;
       subBassGain = context.createGain();
       subBassGain.gain.value = 0.9;
-      subBassGain.connect(masterGain);
+      subBassGain.connect(musicOutputGain);
       musicFilter = context.createBiquadFilter();
       musicFilter.type = 'lowpass';
       musicFilter.frequency.value = 1800;
@@ -532,11 +541,11 @@ const gameAudio = (() => {
       musicFeedback = context.createGain();
       musicFeedback.gain.value = 0.18;
       musicGain.connect(musicFilter);
-      musicFilter.connect(masterGain);
+      musicFilter.connect(musicOutputGain);
       musicGain.connect(musicDelay);
       musicDelay.connect(musicFeedback);
       musicFeedback.connect(musicDelay);
-      musicDelay.connect(masterGain);
+      musicDelay.connect(musicOutputGain);
     }
 
     if (context.state === 'suspended') {
@@ -559,7 +568,7 @@ const gameAudio = (() => {
     gain.gain.exponentialRampToValueAtTime(volume, now + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     oscillator.connect(gain);
-    gain.connect(masterGain);
+    gain.connect(seGain);
     oscillator.start(now);
     oscillator.stop(now + duration + 0.02);
   }
@@ -583,7 +592,7 @@ const gameAudio = (() => {
     source.buffer = buffer;
     source.connect(filter);
     filter.connect(gain);
-    gain.connect(masterGain);
+    gain.connect(seGain);
     source.start();
   }
 
@@ -598,6 +607,13 @@ const gameAudio = (() => {
     volume = Math.max(0, Math.min(1, value));
     if (masterGain && !muted) {
       masterGain.gain.setTargetAtTime(volume, context.currentTime, 0.02);
+    }
+
+    function setMusicVolume(value) {
+      musicVolume = Math.max(0, Math.min(1, value));
+      if (musicOutputGain && !muted) {
+        musicOutputGain.gain.setTargetAtTime(musicVolume, context.currentTime, 0.02);
+      }
     }
   }
 
@@ -665,6 +681,7 @@ const gameAudio = (() => {
       return muted;
     },
     setVolume,
+    setMusicVolume,
     preview,
     startMusic,
     stopMusic,

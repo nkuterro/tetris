@@ -189,7 +189,7 @@ canvas {
 
 .touch-controls {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-rows: repeat(3, 52px);
   gap: 8px;
   width: 100%;
@@ -239,14 +239,15 @@ canvas {
 }
 
 .action-rotate {
-  grid-column: 5;
+  grid-column: 4;
   grid-row: 1;
 }
 
 .action-hold {
-  grid-column: 5;
+  grid-column: 4;
   grid-row: 3;
-  font-size: 0.85rem;
+  font-size: clamp(0.62rem, 2.4vw, 0.85rem);
+  white-space: nowrap;
 }
 
 .touch-btn:active {
@@ -411,7 +412,7 @@ button:active {
   }
 
   .touch-controls {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-rows: repeat(3, 48px);
     gap: 7px;
     width: 100%;
