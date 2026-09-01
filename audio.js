@@ -7,42 +7,84 @@ const gameAudio = (() => {
   let musicStep = 0;
   let musicLevel = 1;
   let nextMusicTime = 0;
+  let musicGain = null;
+  let musicDelay = null;
+  let musicFeedback = null;
 
-  const musicNotes = [130.81, 155.56, 174.61, 196, 233.08, 261.63, 293.66, 349.23];
+  const chordRoots = [130.81, 155.56, 174.61, 116.54];
+  const scale = [1, 1.1892, 1.3348, 1.4983, 1.7818, 2, 2.2449, 2.6697];
 
-  function playMusicTone(frequency, duration, type, level, when, gainValue) {
-    if (!context || !masterGain) return;
+  function getMusicOutput(pan = 0) {
+    const panner = context.createStereoPanner();
+    panner.pan.setValueAtTime(pan, context.currentTime);
+    panner.connect(musicGain);
+    return panner;
+  }
+
+  function playMusicTone(frequency, duration, type, level, when, gainValue, pan = 0) {
+    if (!context || !musicGain) return;
 
     const oscillator = context.createOscillator();
     const gain = context.createGain();
     oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency * (1 + Math.min(level - 1, 10) * 0.01), when);
+    oscillator.frequency.setValueAtTime(frequency * (1 + Math.min(level - 1, 10) * 0.008), when);
     gain.gain.setValueAtTime(0.0001, when);
     gain.gain.exponentialRampToValueAtTime(gainValue, when + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
     oscillator.connect(gain);
-    gain.connect(masterGain);
+    gain.connect(getMusicOutput(pan));
     oscillator.start(when);
     oscillator.stop(when + duration + 0.02);
+  }
+
+  function playMusicNoise(duration, when, gainValue, pan = 0) {
+    const bufferSize = Math.floor(context.sampleRate * duration);
+    const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i += 1) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(1400, when);
+    gain.gain.setValueAtTime(gainValue, when);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    source.buffer = buffer;
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(getMusicOutput(pan));
+    source.start(when);
   }
 
   function scheduleMusic() {
     if (!context || !musicTimer) return;
 
-    const stepDuration = 60 / (92 + Math.min(musicLevel - 1, 10) * 5) / 2;
+    const stepDuration = 60 / (104 + Math.min(musicLevel - 1, 10) * 4) / 4;
     while (nextMusicTime < context.currentTime + 0.18) {
-      const step = musicStep % 16;
-      const barPosition = step % 4;
-      const noteIndex = (musicStep + musicLevel) % musicNotes.length;
+      const step = musicStep % 32;
+      const bar = Math.floor(step / 8) % 4;
+      const beat = step % 8;
+      const root = chordRoots[bar];
+      const note = root * scale[(musicStep + musicLevel * 2) % scale.length];
 
-      if (barPosition === 0 || barPosition === 2) {
-        playMusicTone(65.41, 0.12, 'sine', musicLevel, nextMusicTime, 0.055);
+      if (beat === 0 || beat === 4) {
+        playMusicTone(root / 2, 0.2, 'sine', musicLevel, nextMusicTime, 0.08, -0.15);
+        playMusicTone(root, 0.12, 'square', musicLevel, nextMusicTime, 0.018, 0.1);
       }
-      if (step % 4 === 2 || (musicLevel >= 3 && step % 8 === 6)) {
-        playMusicTone(196, 0.045, 'square', musicLevel, nextMusicTime, 0.018);
+      if (beat === 2 || beat === 6) {
+        playMusicNoise(0.08, nextMusicTime, 0.045, 0.2);
       }
-      if (step % 2 === 0) {
-        playMusicTone(musicNotes[noteIndex], 0.16, 'triangle', musicLevel, nextMusicTime, 0.035);
+      if (musicStep % 2 === 0) {
+        playMusicNoise(0.025, nextMusicTime, musicLevel >= 3 ? 0.022 : 0.014, -0.35);
+      }
+      if (musicStep % 2 === 0) {
+        playMusicTone(note, 0.11, 'triangle', musicLevel, nextMusicTime, 0.04, Math.sin(musicStep) * 0.45);
+      }
+      if (musicLevel >= 2 && beat === 3) {
+        playMusicTone(root * 2, 0.16, 'sawtooth', musicLevel, nextMusicTime, 0.018, 0.35);
       }
 
       musicStep += 1;
@@ -58,6 +100,16 @@ const gameAudio = (() => {
       masterGain = context.createGain();
       masterGain.gain.value = volume;
       masterGain.connect(context.destination);
+      musicGain = context.createGain();
+      musicGain.gain.value = 0.62;
+      musicDelay = context.createDelay(0.35);
+      musicFeedback = context.createGain();
+      musicFeedback.gain.value = 0.18;
+      musicGain.connect(masterGain);
+      musicGain.connect(musicDelay);
+      musicDelay.connect(musicFeedback);
+      musicFeedback.connect(musicDelay);
+      musicDelay.connect(masterGain);
     }
 
     if (context.state === 'suspended') {
