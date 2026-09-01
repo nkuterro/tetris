@@ -145,11 +145,38 @@ const gameAudio = (() => {
     oscillator.stop(when + duration + 0.02);
   }
 
-  function playChordPad(chord, when, level, gainScale = 1) {
+  function playBassSynth(midi, duration, when, gainValue = 0.12) {
+    if (!context || !musicFilter) return;
+
+    const oscillator = context.createOscillator();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(midiToFreq(midi), when);
+    filter.type = 'lowpass';
+    filter.Q.setValueAtTime(3.4, when);
+    filter.frequency.setValueAtTime(180, when);
+    filter.frequency.exponentialRampToValueAtTime(
+      1100 + musicState.danger * 700,
+      when + 0.035
+    );
+    filter.frequency.exponentialRampToValueAtTime(260, when + Math.min(duration, 0.28));
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.exponentialRampToValueAtTime(gainValue, when + 0.012);
+    gain.gain.setTargetAtTime(gainValue * 0.62, when + 0.09, 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    oscillator.connect(filter);
+    filter.connect(gain);
+    gain.connect(getMusicOutput(-0.08));
+    oscillator.start(when);
+    oscillator.stop(when + duration + 0.03);
+  }
+
+  function playChordPad(chord, when, level, gainScale = 1, duration = 0.7) {
     chord.notes.forEach((midi, index) => {
       playMusicTone(
         midiToFreq(midi),
-        0.7,
+        duration,
         index === 0 ? 'sine' : 'triangle',
         level,
         when,
@@ -291,12 +318,12 @@ const gameAudio = (() => {
       const allowKick = musicStep >= 192 || dropActive;
 
       if (allowBass && (beat === 0 || beat === 3 || beat === 6 || (dropActive && beat === 7))) {
-        playMusicTone(midiToFreq(bassMidi - 12), 0.24, 'sine', musicLevel, nextMusicTime, 0.13, -0.18);
-        playMusicTone(midiToFreq(bassMidi), 0.16, 'triangle', musicLevel, nextMusicTime, 0.04, -0.1);
-        playSubBass(bassMidi - 12, 0.26, nextMusicTime, dropActive ? 0.18 : 0.14);
+        const bassDuration = beat === 0 || dropActive ? 0.34 : 0.22;
+        playBassSynth(bassMidi, bassDuration, nextMusicTime, dropActive ? 0.15 : 0.12);
+        playSubBass(bassMidi - 12, bassDuration + 0.04, nextMusicTime, dropActive ? 0.2 : 0.16);
       }
       if (allowBass && (beat === 1 || beat === 5 || (dropActive && beat === 7))) {
-        playMusicTone(midiToFreq(bassMidi), 0.11, 'triangle', musicLevel, nextMusicTime, 0.032, -0.08);
+        playBassSynth(bassMidi, 0.13, nextMusicTime, 0.055);
       }
       if (!intro && dropActive && musicStep % 3 === 1) {
         playMusicTone(midiToFreq(chord.root - 12), 0.12, 'sine', musicLevel, nextMusicTime, 0.055, -0.25);
@@ -304,8 +331,12 @@ const gameAudio = (() => {
       if (allowKick && (dropActive ? beat % 2 === 0 : beat === 0)) {
         playKick(nextMusicTime, dropActive ? 0.17 : 0.12);
       }
-      if (beat === 0 && padActive) {
-        playChordPad(chord, nextMusicTime, musicLevel, intro ? 0.45 : 1);
+      if (padActive && (beat === 0 || beat === 3 || beat === 6)) {
+        const padDuration = beat === 0 ? 0.55 : 0.18;
+        const padScale = beat === 0
+          ? (intro ? 0.45 : 0.82)
+          : (dropActive ? 0.65 : 0.48);
+        playChordPad(chord, nextMusicTime, musicLevel, padScale, padDuration);
       }
       if (allowSnare && (beat === 2 || beat === 6)) {
         playMusicNoise(0.08, nextMusicTime, 0.038, 0.2);
