@@ -17,8 +17,14 @@ const gameAudio = (() => {
     combo: 0
   };
 
-  const chordRoots = [130.81, 155.56, 174.61, 116.54, 130.81, 174.61, 155.56, 116.54];
-  const scale = [1, 1.1225, 1.1892, 1.3348, 1.4983, 1.6818, 1.7818, 2, 2.2449, 2.5198];
+  const chordRoots = [130.81, 155.56, 174.61, 116.54];
+  const chordVoicings = [
+    [1, 1.1892, 1.4983, 2],
+    [1, 1.1892, 1.4983, 1.7818],
+    [1, 1.1892, 1.4983, 2],
+    [1, 1.1225, 1.3348, 1.7818]
+  ];
+  const scale = [1, 1.1225, 1.1892, 1.3348, 1.4983, 1.6818, 1.7818, 2, 2.2449];
   const bassPattern = [0, 0, 7, 5, 0, 3, 5, 7];
 
   function getMusicOutput(pan = 0) {
@@ -66,39 +72,52 @@ const gameAudio = (() => {
     source.start(when);
   }
 
+  function playMusicChord(root, voicing, when, level) {
+    voicing.forEach((interval, index) => {
+      playMusicTone(
+        root * interval,
+        0.34,
+        index === 0 ? 'sine' : 'triangle',
+        level,
+        when,
+        index === 0 ? 0.025 : 0.018,
+        (index - 1.5) * 0.18
+      );
+    });
+  }
+
   function scheduleMusic() {
     if (!context || !musicTimer) return;
 
     const stepDuration = 60 / (104 + Math.min(musicLevel - 1, 10) * 4) / 4;
     while (nextMusicTime < context.currentTime + 0.18) {
       const step = musicStep % 32;
-      const bar = Math.floor(step / 8) % chordRoots.length;
+      const bar = Math.floor(step / 8) % 4;
       const beat = step % 8;
       const root = chordRoots[bar];
-      const tension = musicState.danger > 0.65 ? 2 : 0;
-      const noteIndex = (musicStep + musicLevel * 2 + tension) % scale.length;
-      const note = root * scale[noteIndex];
-      const counterNote = root * scale[(scale.length - 1 - noteIndex + musicLevel) % scale.length] * 2;
+      const voicing = chordVoicings[bar];
+      const tension = musicState.danger > 0.65 ? 1 : 0;
+      const noteIndex = (musicStep * 3 + musicLevel + tension) % scale.length;
+      const note = root * scale[noteIndex] * 2;
       const bassNote = root * scale[bassPattern[beat] % scale.length] / 2;
 
-      if (beat === 0 || beat === 4) {
+      if (beat === 0 || beat === 3 || beat === 6) {
         playMusicTone(bassNote, 0.2, 'sine', musicLevel, nextMusicTime, 0.08, -0.15);
-        playMusicTone(root, 0.12, 'square', musicLevel, nextMusicTime, 0.018, 0.1);
+      }
+      if (beat === 0 || (bar % 2 === 1 && beat === 4)) {
+        playMusicChord(root, voicing, nextMusicTime, musicLevel);
       }
       if (beat === 2 || beat === 6) {
-        playMusicNoise(0.08, nextMusicTime, 0.045, 0.2);
+        playMusicNoise(0.08, nextMusicTime, 0.038, 0.2);
+      }
+      if (musicStep % 2 === 0 || (musicLevel >= 3 && beat === 3)) {
+        playMusicNoise(0.025, nextMusicTime, musicLevel >= 3 ? 0.024 : 0.014, -0.35);
       }
       if (musicStep % 2 === 0) {
-        playMusicNoise(0.025, nextMusicTime, musicLevel >= 3 ? 0.022 : 0.014, -0.35);
-      }
-      if (musicStep % 2 === 0) {
-        playMusicTone(note, 0.11, 'triangle', musicLevel, nextMusicTime, 0.04, Math.sin(musicStep) * 0.45);
-      }
-      if (musicStep % 4 === 2 || musicState.combo > 0) {
-        playMusicTone(counterNote, 0.09, 'sine', musicLevel, nextMusicTime, 0.022, 0.42);
+        playMusicTone(note, 0.12, 'sawtooth', musicLevel, nextMusicTime, 0.026, Math.sin(musicStep) * 0.4);
       }
       if (musicLevel >= 2 && (beat === 3 || (musicState.danger > 0.75 && beat === 7))) {
-        playMusicTone(root * 2, 0.16, 'sawtooth', musicLevel, nextMusicTime, 0.018, 0.35);
+        playMusicTone(root * 4, 0.1, 'square', musicLevel, nextMusicTime, 0.016, 0.35);
       }
 
       musicStep += 1;
