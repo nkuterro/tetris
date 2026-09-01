@@ -200,6 +200,11 @@ function clearLines() {
   level = Math.floor(lines / LINES_PER_LEVEL) + 1;
   dropInterval = getDropInterval(level);
   updateStats();
+  if (cleared === 4) {
+    gameAudio.tetris();
+  } else {
+    gameAudio.clear(cleared);
+  }
 
   const boardSnapshot = board.map((row) => row.slice());
   clearTimeoutId = setTimeout(() => {
@@ -262,6 +267,11 @@ function movePiece(offsetX, offsetY) {
   if (!collides(currentPiece, offsetX, offsetY)) {
     currentPiece.x += offsetX;
     currentPiece.y += offsetY;
+    if (offsetX !== 0) {
+      gameAudio.move();
+    } else if (offsetY > 0) {
+      gameAudio.softDrop();
+    }
     drawBoard();
   } else if (offsetY > 0) {
     lockPiece();
@@ -278,6 +288,7 @@ function rotatePiece() {
     if (!collides(currentPiece, kick, 0, rotated)) {
       currentPiece.matrix = rotated;
       currentPiece.x += kick;
+      gameAudio.rotate();
       drawBoard();
       return;
     }
@@ -294,6 +305,7 @@ function hardDrop() {
   }
 
   score += distance * 2;
+  gameAudio.hardDrop();
   updateStats();
   lockPiece();
 }
@@ -320,6 +332,7 @@ function holdCurrentPiece() {
   }
 
   heldThisTurn = true;
+  gameAudio.hold();
   drawBoard();
   drawHoldPreview();
   drawNextPreview();
@@ -480,6 +493,7 @@ function resetGame() {
 function endGame() {
   gameOver = true;
   isRunning = false;
+  gameAudio.gameOver();
   drawBoard();
   drawNextPreview();
   boardCtx.fillStyle = 'rgba(2, 8, 23, 0.7)';
@@ -555,6 +569,7 @@ window.addEventListener('keydown', (event) => {
   if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'Space'].includes(key)) {
     event.preventDefault();
   }
+  gameAudio.start();
 
   if (key === 'KeyP') {
     togglePause();
@@ -593,12 +608,19 @@ window.addEventListener('keydown', (event) => {
 });
 
 startBtn.addEventListener('click', () => {
+  gameAudio.start();
   resetGame();
+});
+
+soundBtn.addEventListener('click', () => {
+  const muted = gameAudio.toggleMute();
+  soundBtn.textContent = muted ? 'Sound: OFF' : 'Sound: ON';
 });
 
 touchButtons.forEach((button) => {
   button.addEventListener('pointerdown', (event) => {
     event.preventDefault();
+    gameAudio.start();
     handleTouchAction(button.dataset.action);
   });
 });

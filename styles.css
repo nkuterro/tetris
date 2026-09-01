@@ -181,6 +181,12 @@ button:active {
   transform: translateY(0);
 }
 
+.sound-btn {
+  margin-top: 8px;
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--text);
+}
+
 @media (max-width: 768px) {
   body {
     display: block;
