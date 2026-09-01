@@ -232,10 +232,9 @@ function clearLines() {
     board.splice(0, board.length, ...remaining);
     clearEffect = [];
     isClearing = false;
-    dropCount = 0;
-    lastInput = 'reset';
     clearTimeoutId = null;
     spawnPiece();
+    scheduleDrop();
     drawBoard();
     drawHoldPreview();
     drawNextPreview();
@@ -476,7 +475,7 @@ function drawNextPreview() {
 
 function resetGame() {
   if (dropTimerId) {
-    clearTimeout(dropTimerId);
+    clearInterval(dropTimerId);
     dropTimerId = null;
   }
 
@@ -487,6 +486,8 @@ function resetGame() {
 
   clearEffect = [];
   isClearing = false;
+  dropCount = 0;
+  lastInput = 'reset';
 
   for (let y = 0; y < ROWS; y += 1) {
     for (let x = 0; x < COLS; x += 1) {
@@ -519,17 +520,13 @@ function resetGame() {
 
 function scheduleDrop() {
   if (dropTimerId) {
-    clearTimeout(dropTimerId);
+    clearInterval(dropTimerId);
   }
 
-  dropTimerId = setTimeout(() => {
-    dropTimerId = null;
+  dropTimerId = setInterval(() => {
     if (isRunning && !isPaused && !gameOver && !isClearing) {
       dropCount += 1;
       movePiece(0, 1);
-    }
-    if (isRunning && !gameOver) {
-      scheduleDrop();
     }
     updateDebugStatus();
   }, dropInterval);
@@ -540,7 +537,7 @@ function endGame() {
   gameOver = true;
   isRunning = false;
   if (dropTimerId) {
-    clearTimeout(dropTimerId);
+    clearInterval(dropTimerId);
     dropTimerId = null;
   }
   gameAudio.gameOver();
