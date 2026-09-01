@@ -162,12 +162,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: var(--board-width);
 }
 
 .panel {
   background: transparent;
   border-radius: 12px;
-  padding: clamp(8px, 1.5vw, 14px);
+  padding: 0;
   border: none;
 }
 
@@ -188,12 +189,12 @@ canvas {
 
 .touch-controls {
   display: grid;
-  grid-template-columns: repeat(5, 52px);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-rows: repeat(3, 52px);
   gap: 8px;
-  width: 292px;
-  max-width: none;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
 }
 
 .touch-btn {
@@ -410,11 +411,11 @@ button:active {
   }
 
   .touch-controls {
-    grid-template-columns: repeat(5, 48px);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     grid-template-rows: repeat(3, 48px);
     gap: 7px;
-    width: 268px;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
   }
 
   .touch-btn {
@@ -501,7 +502,7 @@ button:active {
   }
 
   .panel {
-    padding: 6px;
+    padding: 0;
   }
 
   .hold-side #hold {
