@@ -624,6 +624,9 @@ function handleTouchAction(action) {
     case 'hold':
       holdCurrentPiece();
       break;
+    case 'pause':
+      togglePause();
+      break;
     default:
       break;
   }
@@ -691,6 +694,8 @@ volumeSlider.addEventListener('input', () => {
   const volume = Number(volumeSlider.value);
   gameAudio.setVolume(volume / 100);
   volumeValue.textContent = `${volume}%`;
+  gameAudio.start();
+  gameAudio.rotate();
 });
 
 touchButtons.forEach((button) => {

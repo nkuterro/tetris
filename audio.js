@@ -2,7 +2,7 @@ const gameAudio = (() => {
   let context = null;
   let masterGain = null;
   let muted = false;
-  let volume = 0.7;
+  let volume = 1;
 
   function ensureStarted() {
     if (!context) {
