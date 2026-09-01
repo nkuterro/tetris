@@ -10,14 +10,21 @@ const gameAudio = (() => {
   let musicGain = null;
   let musicDelay = null;
   let musicFeedback = null;
+  let musicFilter = null;
+  let musicState = {
+    danger: 0,
+    clearedLines: 0,
+    combo: 0
+  };
 
-  const chordRoots = [130.81, 155.56, 174.61, 116.54];
-  const scale = [1, 1.1892, 1.3348, 1.4983, 1.7818, 2, 2.2449, 2.6697];
+  const chordRoots = [130.81, 155.56, 174.61, 116.54, 130.81, 174.61, 155.56, 116.54];
+  const scale = [1, 1.1225, 1.1892, 1.3348, 1.4983, 1.6818, 1.7818, 2, 2.2449, 2.5198];
+  const bassPattern = [0, 0, 7, 5, 0, 3, 5, 7];
 
   function getMusicOutput(pan = 0) {
     const panner = context.createStereoPanner();
     panner.pan.setValueAtTime(pan, context.currentTime);
-    panner.connect(musicGain);
+    panner.connect(musicFilter);
     return panner;
   }
 
@@ -65,13 +72,17 @@ const gameAudio = (() => {
     const stepDuration = 60 / (104 + Math.min(musicLevel - 1, 10) * 4) / 4;
     while (nextMusicTime < context.currentTime + 0.18) {
       const step = musicStep % 32;
-      const bar = Math.floor(step / 8) % 4;
+      const bar = Math.floor(step / 8) % chordRoots.length;
       const beat = step % 8;
       const root = chordRoots[bar];
-      const note = root * scale[(musicStep + musicLevel * 2) % scale.length];
+      const tension = musicState.danger > 0.65 ? 2 : 0;
+      const noteIndex = (musicStep + musicLevel * 2 + tension) % scale.length;
+      const note = root * scale[noteIndex];
+      const counterNote = root * scale[(scale.length - 1 - noteIndex + musicLevel) % scale.length] * 2;
+      const bassNote = root * scale[bassPattern[beat] % scale.length] / 2;
 
       if (beat === 0 || beat === 4) {
-        playMusicTone(root / 2, 0.2, 'sine', musicLevel, nextMusicTime, 0.08, -0.15);
+        playMusicTone(bassNote, 0.2, 'sine', musicLevel, nextMusicTime, 0.08, -0.15);
         playMusicTone(root, 0.12, 'square', musicLevel, nextMusicTime, 0.018, 0.1);
       }
       if (beat === 2 || beat === 6) {
@@ -83,7 +94,10 @@ const gameAudio = (() => {
       if (musicStep % 2 === 0) {
         playMusicTone(note, 0.11, 'triangle', musicLevel, nextMusicTime, 0.04, Math.sin(musicStep) * 0.45);
       }
-      if (musicLevel >= 2 && beat === 3) {
+      if (musicStep % 4 === 2 || musicState.combo > 0) {
+        playMusicTone(counterNote, 0.09, 'sine', musicLevel, nextMusicTime, 0.022, 0.42);
+      }
+      if (musicLevel >= 2 && (beat === 3 || (musicState.danger > 0.75 && beat === 7))) {
         playMusicTone(root * 2, 0.16, 'sawtooth', musicLevel, nextMusicTime, 0.018, 0.35);
       }
 
@@ -102,10 +116,15 @@ const gameAudio = (() => {
       masterGain.connect(context.destination);
       musicGain = context.createGain();
       musicGain.gain.value = 0.62;
+      musicFilter = context.createBiquadFilter();
+      musicFilter.type = 'lowpass';
+      musicFilter.frequency.value = 1800;
+      musicFilter.Q.value = 0.7;
       musicDelay = context.createDelay(0.35);
       musicFeedback = context.createGain();
       musicFeedback.gain.value = 0.18;
-      musicGain.connect(masterGain);
+      musicGain.connect(musicFilter);
+      musicFilter.connect(masterGain);
       musicGain.connect(musicDelay);
       musicDelay.connect(musicFeedback);
       musicFeedback.connect(musicDelay);
@@ -191,6 +210,22 @@ const gameAudio = (() => {
 
   function setMusicLevel(level) {
     musicLevel = Math.max(1, Number(level) || 1);
+    updateMusicFilter();
+  }
+
+  function updateMusicFilter() {
+    if (!musicFilter || !context) return;
+    const cutoff = 1400 + musicState.danger * 4200 + Math.min(musicLevel - 1, 10) * 120;
+    musicFilter.frequency.setTargetAtTime(cutoff, context.currentTime, 0.08);
+  }
+
+  function setMusicState(state = {}) {
+    musicState = {
+      danger: Math.max(0, Math.min(1, Number(state.danger) || 0)),
+      clearedLines: Math.max(0, Number(state.clearedLines) || 0),
+      combo: Math.max(0, Number(state.combo) || 0)
+    };
+    updateMusicFilter();
   }
 
   function preview(value) {
@@ -212,6 +247,7 @@ const gameAudio = (() => {
     startMusic,
     stopMusic,
     setMusicLevel,
+    setMusicState,
     move() {
       tone(180, 0.035, 'square', 0.045, 230);
     },

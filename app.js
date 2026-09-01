@@ -93,6 +93,7 @@ let clearTimeoutId = null;
 let dropTimerId = null;
 let dropCount = 0;
 let lastInput = '-';
+let combo = 0;
 
 function updateDebugStatus(message = '') {
   if (!debugStatus) return;
@@ -218,9 +219,11 @@ function clearLines() {
   const lineScores = [0, 100, 300, 500, 800];
   score += lineScores[cleared] * level;
   lines += cleared;
+  combo += 1;
   level = Math.floor(lines / LINES_PER_LEVEL) + 1;
   dropInterval = getDropInterval(level);
   gameAudio.setMusicLevel(level);
+  updateMusicState(cleared);
   updateStats();
   if (cleared === 4) {
     gameAudio.tetris();
@@ -255,6 +258,27 @@ function updateStats() {
   levelEl.textContent = String(level);
 }
 
+function updateMusicState(clearedLines = 0) {
+  let highestRow = ROWS;
+  let occupied = 0;
+
+  board.forEach((row, y) => {
+    row.forEach((cell) => {
+      if (cell) {
+        occupied += 1;
+        highestRow = Math.min(highestRow, y);
+      }
+    });
+  });
+
+  const stackHeight = highestRow === ROWS ? 0 : ROWS - highestRow;
+  const danger = Math.max(
+    stackHeight / ROWS,
+    (occupied / (COLS * ROWS)) * 1.35
+  );
+  gameAudio.setMusicState({ danger, clearedLines, combo });
+}
+
 function spawnPiece() {
   if (currentPiece === null) {
     currentPiece = createPiece(takeFromQueue());
@@ -278,6 +302,8 @@ function lockPiece() {
   const cleared = clearLines();
 
   if (cleared === 0) {
+    combo = 0;
+    updateMusicState();
     spawnPiece();
     drawBoard();
     drawHoldPreview();
@@ -508,8 +534,10 @@ function resetGame() {
   score = 0;
   lines = 0;
   level = 1;
+  combo = 0;
   dropInterval = getDropInterval(level);
   gameAudio.setMusicLevel(level);
+  updateMusicState();
   isPaused = false;
   gameOver = false;
   menuScreen.hidden = true;
