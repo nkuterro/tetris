@@ -85,6 +85,28 @@ body {
   margin: 0 0 24px;
 }
 
+.menu-card > button + button {
+  margin-top: 10px;
+}
+
+.secondary-btn {
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--text);
+}
+
+.preview-level {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+#preview-level {
+  width: 100%;
+  margin: 0 0 16px;
+  accent-color: var(--accent);
+}
+
 .menu-hint {
   margin: 20px 0 0;
   font-size: 0.75rem;

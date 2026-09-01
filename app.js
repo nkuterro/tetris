@@ -19,6 +19,13 @@ const menuScreen = document.getElementById('menu-screen');
 const menuStartBtn = document.getElementById('menu-start-btn');
 const startScreen = document.getElementById('start-screen');
 const titleStartBtn = document.getElementById('title-start-btn');
+const musicPreviewBtn = document.getElementById('music-preview-btn');
+const musicScreen = document.getElementById('music-screen');
+const previewLevel = document.getElementById('preview-level');
+const previewLevelValue = document.getElementById('preview-level-value');
+const previewPlayBtn = document.getElementById('preview-play-btn');
+const previewStopBtn = document.getElementById('preview-stop-btn');
+const previewBackBtn = document.getElementById('preview-back-btn');
 const gameShell = document.querySelector('.game-shell');
 const volumeSlider = document.getElementById('volume-slider');
 const volumeValue = document.getElementById('volume-value');
@@ -837,11 +844,28 @@ function resetGame(startImmediately = true) {
 async function startGame() {
   if (isGameStarted) return;
   isGameStarted = true;
+  gameAudio.stopMusic();
+  musicScreen.hidden = true;
+  musicScreen.classList.remove('is-visible');
   startScreen.hidden = true;
   startScreen.classList.remove('is-visible');
   resetGame(true);
   await gameAudio.start();
   await gameAudio.startMusic();
+}
+
+async function playMusicPreview() {
+  const selectedLevel = Number(previewLevel.value);
+  gameAudio.stopMusic();
+  gameAudio.setMusicLevel(selectedLevel);
+  await gameAudio.start();
+  await gameAudio.startMusic();
+  previewPlayBtn.textContent = 'PLAYING...';
+}
+
+function stopMusicPreview() {
+  gameAudio.stopMusic();
+  previewPlayBtn.textContent = 'PLAY MUSIC';
 }
 
 function showPauseMenu() {
@@ -1037,6 +1061,25 @@ startBtn.addEventListener('click', async () => {
 
 menuStartBtn.addEventListener('click', hidePauseMenu);
 titleStartBtn.addEventListener('click', startGame);
+musicPreviewBtn.addEventListener('click', () => {
+  musicScreen.hidden = false;
+  musicScreen.classList.add('is-visible');
+  startScreen.hidden = true;
+  startScreen.classList.remove('is-visible');
+});
+previewPlayBtn.addEventListener('click', playMusicPreview);
+previewStopBtn.addEventListener('click', stopMusicPreview);
+previewBackBtn.addEventListener('click', () => {
+  stopMusicPreview();
+  musicScreen.hidden = true;
+  musicScreen.classList.remove('is-visible');
+  startScreen.hidden = false;
+  startScreen.classList.add('is-visible');
+});
+previewLevel.addEventListener('input', () => {
+  previewLevelValue.textContent = previewLevel.value;
+  gameAudio.setMusicLevel(Number(previewLevel.value));
+});
 
 soundBtn.addEventListener('click', () => {
   const muted = gameAudio.toggleMute();
