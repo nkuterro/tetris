@@ -154,7 +154,7 @@ body {
 
 canvas {
   display: block;
-  background: #020817;
+  background: rgba(2, 8, 23, 0.68);
   border-radius: 8px;
 }
 
@@ -450,42 +450,31 @@ button:active {
   }
 
   .game-shell {
-    --board-width: min(300px, calc(100vw - 32px), calc((100svh - 220px) / 2));
-    flex-direction: column;
-    align-items: center;
+    --board-width: min(300px, calc(100vw - 224px), calc((100svh - 24px) / 2));
+    flex-direction: row;
+    align-items: flex-start;
     padding: 6px;
     gap: 8px;
   }
 
   .hold-side,
   .sidebar {
-    width: min(100%, 300px);
-    flex: 0 0 auto;
+    width: auto;
   }
 
   .hold-side {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+    display: block;
+    flex: 0 0 72px;
   }
 
   .sidebar {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex: 0 0 100px;
+    gap: 8px;
   }
 
   .panel {
     padding: 6px;
-  }
-
-  .sidebar {
-    width: 100px;
-    flex-basis: 100px;
-  }
-
-  .hold-side {
-    flex-basis: 72px;
   }
 
   .hold-side #hold {

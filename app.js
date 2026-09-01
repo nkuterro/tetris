@@ -150,11 +150,14 @@ function drawBackground(timestamp) {
       if (x === -20) bgCtx.moveTo(x, y);
       else bgCtx.lineTo(x, y);
     }
+    bgCtx.shadowColor = wave % 2 === 0 ? '#22d3ee' : '#a78bfa';
+    bgCtx.shadowBlur = 12;
     bgCtx.strokeStyle = wave % 2 === 0
-      ? `rgba(34, 211, 238, ${0.045 + danger * 0.025})`
-      : `rgba(167, 139, 250, ${0.035 + danger * 0.02})`;
-    bgCtx.lineWidth = 1.5;
+      ? `rgba(34, 211, 238, ${0.13 + danger * 0.06})`
+      : `rgba(167, 139, 250, ${0.1 + danger * 0.05})`;
+    bgCtx.lineWidth = 2;
     bgCtx.stroke();
+    bgCtx.shadowBlur = 0;
   }
 }
 
