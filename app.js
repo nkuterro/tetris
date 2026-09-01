@@ -509,6 +509,8 @@ function resetGame() {
   dropInterval = getDropInterval(level);
   isPaused = false;
   gameOver = false;
+  menuScreen.hidden = true;
+  menuScreen.classList.remove('is-visible');
   lastTime = 0;
   dropAccumulator = 0;
   currentPiece = null;
@@ -640,7 +642,9 @@ window.addEventListener('keydown', (event) => {
   if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'Space'].includes(key)) {
     event.preventDefault();
   }
-  gameAudio.start();
+  if (typeof gameAudio !== 'undefined') {
+    gameAudio.start();
+  }
 
   if (key === 'KeyP') {
     togglePause();
@@ -679,7 +683,9 @@ window.addEventListener('keydown', (event) => {
 });
 
 startBtn.addEventListener('click', () => {
-  gameAudio.start();
+  if (typeof gameAudio !== 'undefined') {
+    gameAudio.start();
+  }
   resetGame();
 });
 
@@ -701,7 +707,9 @@ volumeSlider.addEventListener('input', () => {
 actionButtons.forEach((button) => {
   button.addEventListener('pointerdown', (event) => {
     event.preventDefault();
-    gameAudio.start();
+    if (typeof gameAudio !== 'undefined') {
+      gameAudio.start();
+    }
     handleTouchAction(button.dataset.action);
   });
 });
