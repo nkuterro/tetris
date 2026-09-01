@@ -608,12 +608,12 @@ const gameAudio = (() => {
     if (masterGain && !muted) {
       masterGain.gain.setTargetAtTime(volume, context.currentTime, 0.02);
     }
+  }
 
-    function setMusicVolume(value) {
-      musicVolume = Math.max(0, Math.min(1, value));
-      if (musicOutputGain && !muted) {
-        musicOutputGain.gain.setTargetAtTime(musicVolume, context.currentTime, 0.02);
-      }
+  function setMusicVolume(value) {
+    musicVolume = Math.max(0, Math.min(1, value));
+    if (musicOutputGain && !muted) {
+      musicOutputGain.gain.setTargetAtTime(musicVolume, context.currentTime, 0.02);
     }
   }
 
