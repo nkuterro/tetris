@@ -17,6 +17,9 @@ const gameAudio = (() => {
   let musicFeedback = null;
   let musicFilter = null;
   let musicLevelTarget = 1;
+  let activePatternIndex = 0;
+  let currentStepDuration = 60 / 104 / 4;
+  let targetStepDuration = currentStepDuration;
   let melodyIndex = 0;
   let bassPatternIndex = 0;
   let musicPhase = 'groove';
@@ -386,17 +389,26 @@ const gameAudio = (() => {
     }
 
     const levelNumber = Math.max(1, Math.round(musicLevelTarget));
-    const patternIndex = Math.floor((levelNumber - 1) / 5) % 5;
-    const style = soundStyles[patternIndex];
+    const targetPatternIndex = Math.floor((levelNumber - 1) / 5) % 5;
     const subLevel = (levelNumber - 1) % 5;
+    targetStepDuration = 60 / (104 + subLevel * 5) / 4;
+    currentStepDuration += (targetStepDuration - currentStepDuration) * 0.045;
+    const patternIndex = activePatternIndex;
+    const style = soundStyles[patternIndex];
     const progressionKeys = ['verse', 'chorus', 'pattern2', 'pattern3', 'pattern4'];
     const progression = chordProgressions[progressionKeys[patternIndex]];
-    const stepDuration = 60 / (104 + subLevel * 5) / 4;
+    const stepDuration = currentStepDuration;
     while (nextMusicTime < context.currentTime + 0.18) {
       const totalStep = musicStep % 128;
       const step = totalStep % 64;
       const measure = Math.floor(step / 8);
       const macroMeasure = Math.floor(totalStep / 8);
+      if (musicStep % 8 === 0) {
+        if (activePatternIndex !== targetPatternIndex) {
+          activePatternIndex = targetPatternIndex;
+          playTransition(nextMusicTime);
+        }
+      }
       if (totalStep === 0) {
         musicPhase = chooseNextSection();
         bassPatternIndex = (bassPatternIndex + 1 + Math.floor(Math.random() * 2)) % bassPatterns.length;
@@ -436,6 +448,32 @@ const gameAudio = (() => {
         const bassDuration = beat === 0 || dropActive ? 0.34 : 0.22;
         playBassSynth(bassMidi, bassDuration, nextMusicTime, dropActive ? 0.085 : 0.07, style);
         playSubBass(bassMidi - 12, bassDuration + 0.04, nextMusicTime, dropActive ? 0.095 : 0.065);
+      }
+
+      function playTransition(when) {
+        if (!context || !musicFilter) return;
+        const transitionFilter = context.createBiquadFilter();
+        const transitionGain = context.createGain();
+        const duration = 1.2;
+        transitionFilter.type = 'lowpass';
+        transitionFilter.Q.setValueAtTime(0.7, when);
+        transitionFilter.frequency.setValueAtTime(280, when);
+        transitionFilter.frequency.exponentialRampToValueAtTime(4200, when + duration);
+        transitionGain.gain.setValueAtTime(0.0001, when);
+        transitionGain.gain.exponentialRampToValueAtTime(0.045, when + duration * 0.65);
+        transitionGain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+        const bufferSize = Math.floor(context.sampleRate * duration);
+        const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i += 1) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(transitionFilter);
+        transitionFilter.connect(transitionGain);
+        transitionGain.connect(getMusicOutput(0));
+        source.start(when);
       }
       if (allowBass && allowLowEnd && (dropActive && (beat === 3 || beat === 7))) {
         playBassSynth(bassMidi, 0.1, nextMusicTime, 0.035, style);
@@ -628,6 +666,9 @@ const gameAudio = (() => {
       return;
     }
     musicStep = 0;
+    activePatternIndex = 0;
+    currentStepDuration = 60 / 104 / 4;
+    targetStepDuration = currentStepDuration;
     melodyIndex = 0;
     bassPatternIndex = 0;
     musicPhase = 'intro';
@@ -654,7 +695,7 @@ const gameAudio = (() => {
   function updateMusicFilter() {
     if (!musicFilter || !context) return;
     const cutoff = 1400 + musicState.danger * 4200 + Math.min(musicLevel - 1, 10) * 120;
-    musicFilter.frequency.setTargetAtTime(cutoff, context.currentTime, 0.08);
+    musicFilter.frequency.setTargetAtTime(cutoff, context.currentTime, 0.35);
   }
 
   function setMusicState(state = {}) {
