@@ -102,6 +102,7 @@ let shakeTime = 0;
 let shockwave = null;
 let backgroundImpact = 0;
 let backgroundFlash = 0;
+let backgroundHue = 190;
 const backgroundStars = Array.from({ length: 90 }, () => ({
   x: Math.random() * 2 - 1,
   y: Math.random() * 2 - 1,
@@ -134,7 +135,10 @@ function drawBackground(timestamp) {
   const height = window.innerHeight;
   const time = timestamp * 0.001;
   const levelIndex = Math.max(0, level - 1);
-  const hue = (190 + levelIndex * 31) % 360;
+  const targetHue = (190 + levelIndex * 31) % 360;
+  const hueDelta = ((targetHue - backgroundHue + 540) % 360) - 180;
+  backgroundHue = (backgroundHue + hueDelta * 0.035 + 360) % 360;
+  const hue = backgroundHue;
   const pattern = Math.floor(levelIndex / 2) % 4;
   const intensity = Math.min(0.9, 0.28 + levelIndex * 0.035);
   const pulse = 0.5 + Math.sin(time * (2.2 + pattern * 0.35)) * 0.5;
@@ -787,6 +791,7 @@ function resetGame() {
   shockwave = null;
   backgroundImpact = 0;
   backgroundFlash = 0;
+  backgroundHue = 190;
   isClearing = false;
   dropCount = 0;
   lastInput = 'reset';
