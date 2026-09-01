@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tetris</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="game-shell">
+      <div class="game-column">
+        <div class="panel">
+          <canvas id="game" width="300" height="600" aria-label="Tetris game board"></canvas>
+        </div>
+
+        <div class="touch-controls" aria-label="Touch controls">
+          <button type="button" class="touch-btn" data-action="left">◀</button>
+          <button type="button" class="touch-btn" data-action="right">▶</button>
+          <button type="button" class="touch-btn" data-action="rotate">⟳</button>
+          <button type="button" class="touch-btn" data-action="down">↓</button>
+          <button type="button" class="touch-btn" data-action="drop">⤓</button>
+          <button type="button" class="touch-btn" data-action="hold">Hold</button>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="card">
+          <h1>Tetris</h1>
+          <div class="stats">
+            <div><span>Score</span><strong id="score">0</strong></div>
+            <div><span>Lines</span><strong id="lines">0</strong></div>
+            <div><span>Level</span><strong id="level">1</strong></div>
+          </div>
+        </div>
+
+        <div class="card preview-card">
+          <h2>Hold</h2>
+          <canvas id="hold" width="120" height="120" aria-label="Hold piece preview"></canvas>
+        </div>
+
+        <div class="card preview-card">
+          <h2>Next</h2>
+          <canvas id="next" width="120" height="120" aria-label="Next piece preview"></canvas>
+        </div>
+
+        <div class="card controls-card">
+          <h2>Controls</h2>
+          <ul>
+            <li>← → : move</li>
+            <li>↓ : soft drop</li>
+            <li>Space : rotate</li>
+            <li>↑ : hard drop</li>
+            <li>C : hold</li>
+            <li>P : pause</li>
+          </ul>
+          <button id="start-btn" type="button">Start / Restart</button>
+        </div>
+      </aside>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
