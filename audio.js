@@ -65,6 +65,53 @@ const gameAudio = (() => {
     [0, 0, 5, 7, 0, 3, 7, 5],
     [0, 5, 7, 5, 0, 7, 5, 3]
   ];
+  const soundStyles = [
+    {
+      leadType: 'triangle',
+      bassType: 'triangle',
+      leadOctave: 12,
+      bassFilter: 520,
+      leadFilterQ: 0.8,
+      kickPattern: [0, 4],
+      hatPattern: [1, 3, 5, 7]
+    },
+    {
+      leadType: 'square',
+      bassType: 'square',
+      leadOctave: 12,
+      bassFilter: 430,
+      leadFilterQ: 1.5,
+      kickPattern: [0, 3, 4, 6],
+      hatPattern: [1, 3, 5, 7]
+    },
+    {
+      leadType: 'sawtooth',
+      bassType: 'triangle',
+      leadOctave: 12,
+      bassFilter: 760,
+      leadFilterQ: 1.8,
+      kickPattern: [0, 4, 6],
+      hatPattern: [1, 2, 3, 5, 6, 7]
+    },
+    {
+      leadType: 'sawtooth',
+      bassType: 'sawtooth',
+      leadOctave: 24,
+      bassFilter: 620,
+      leadFilterQ: 2.4,
+      kickPattern: [0, 2, 4, 6],
+      hatPattern: [1, 3, 5, 7]
+    },
+    {
+      leadType: 'square',
+      bassType: 'sawtooth',
+      leadOctave: 12,
+      bassFilter: 360,
+      leadFilterQ: 1.2,
+      kickPattern: [0, 3, 4, 7],
+      hatPattern: [1, 2, 4, 5, 7]
+    }
+  ];
   const melodyTransitions = {
     0: [0, 1, 2, 4, 5],
     1: [0, 2, 3, 4, 6],
@@ -137,17 +184,18 @@ const gameAudio = (() => {
     oscillator.stop(when + duration + 0.02);
   }
 
-  function playSynthLead(midi, duration, when, pan = 0, gainValue = 0.03) {
+  function playSynthLead(midi, duration, when, pan = 0, gainValue = 0.03, style = soundStyles[0]) {
     if (!context || !musicFilter) return;
 
     const oscillator = context.createOscillator();
     const filter = context.createBiquadFilter();
     const gain = context.createGain();
     const frequency = midiToFreq(midi);
-    oscillator.type = 'sawtooth';
+    oscillator.type = style.leadType;
     oscillator.frequency.setValueAtTime(frequency, when);
+    oscillator.detune.setValueAtTime(style.leadType === 'sawtooth' ? 4 : 0, when);
     filter.type = 'lowpass';
-    filter.Q.setValueAtTime(1.05, when);
+    filter.Q.setValueAtTime(style.leadFilterQ, when);
     filter.frequency.setValueAtTime(1100, when);
     filter.frequency.exponentialRampToValueAtTime(
       3000 + musicState.danger * 1200,
@@ -164,18 +212,18 @@ const gameAudio = (() => {
     oscillator.stop(when + duration + 0.02);
   }
 
-  function playBassSynth(midi, duration, when, gainValue = 0.08) {
+  function playBassSynth(midi, duration, when, gainValue = 0.08, style = soundStyles[0]) {
     if (!context || !musicFilter) return;
 
     const oscillator = context.createOscillator();
     const filter = context.createBiquadFilter();
     const gain = context.createGain();
-    oscillator.type = 'triangle';
+    oscillator.type = style.bassType;
     oscillator.frequency.setValueAtTime(midiToFreq(midi), when);
     filter.type = 'lowpass';
     filter.Q.setValueAtTime(0.8, when);
-    filter.frequency.setValueAtTime(600, when);
-    filter.frequency.exponentialRampToValueAtTime(250, when + 0.04);
+    filter.frequency.setValueAtTime(style.bassFilter, when);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(180, style.bassFilter * 0.42), when + 0.04);
     gain.gain.setValueAtTime(0.0001, when);
     gain.gain.linearRampToValueAtTime(gainValue, when + 0.009);
     gain.gain.setTargetAtTime(gainValue * 0.55, when + 0.09, 0.08);
@@ -187,12 +235,12 @@ const gameAudio = (() => {
     oscillator.stop(when + duration + 0.03);
   }
 
-  function playChordPad(chord, when, level, gainScale = 1, duration = 0.7) {
+  function playChordPad(chord, when, level, gainScale = 1, duration = 0.7, style = soundStyles[0]) {
     chord.notes.forEach((midi, index) => {
       playMusicTone(
         midiToFreq(midi),
         duration,
-        index === 0 ? 'sine' : 'triangle',
+        index === 0 ? 'sine' : style.leadType === 'square' ? 'square' : 'triangle',
         level,
         when,
         (index === 0 ? 0.018 : 0.013) * gainScale,
@@ -306,6 +354,7 @@ const gameAudio = (() => {
 
     const levelNumber = Math.max(1, Math.round(musicLevelTarget));
     const patternIndex = Math.floor((levelNumber - 1) / 5) % 5;
+    const style = soundStyles[patternIndex];
     const subLevel = (levelNumber - 1) % 5;
     const progressionKeys = ['verse', 'chorus', 'pattern2', 'pattern3', 'pattern4'];
     const progression = chordProgressions[progressionKeys[patternIndex]];
@@ -331,7 +380,7 @@ const gameAudio = (() => {
       const bassLine = bassPatterns[bassPatternIndex];
       const motifPosition = Math.floor((musicStep % 16) / 2);
       const melodyStep = melodyMotif[motifPosition];
-      const melodyMidi = minorScale[melodyStep] + 12;
+      const melodyMidi = minorScale[melodyStep] + style.leadOctave;
       const bassMidi = chord.root + bassLine[beat];
       const melodyActive = musicPhase !== 'break' || musicState.danger > 0.55;
       const padActive = musicPhase !== 'groove' || musicLevel >= 2;
@@ -352,16 +401,16 @@ const gameAudio = (() => {
 
       if (allowBass && allowLowEnd && (beat === 0 || beat === 4 || (dropActive && beat === 7))) {
         const bassDuration = beat === 0 || dropActive ? 0.34 : 0.22;
-        playBassSynth(bassMidi, bassDuration, nextMusicTime, dropActive ? 0.085 : 0.07);
+        playBassSynth(bassMidi, bassDuration, nextMusicTime, dropActive ? 0.085 : 0.07, style);
         playSubBass(bassMidi - 12, bassDuration + 0.04, nextMusicTime, dropActive ? 0.095 : 0.065);
       }
       if (allowBass && allowLowEnd && (dropActive && (beat === 3 || beat === 7))) {
-        playBassSynth(bassMidi, 0.1, nextMusicTime, 0.035);
+        playBassSynth(bassMidi, 0.1, nextMusicTime, 0.035, style);
       }
       if (!intro && dropActive && musicStep % 3 === 1) {
         playMusicTone(midiToFreq(chord.root - 12), 0.12, 'sine', musicLevel, nextMusicTime, 0.055, -0.25);
       }
-      if (allowKick && !isDropPreBreak && (dropActive ? beat % 2 === 0 : beat === 0)) {
+      if (allowKick && !isDropPreBreak && style.kickPattern.includes(beat)) {
         playKick(nextMusicTime, dropActive ? 0.17 : 0.12);
       }
       if (allowPad && padActive && (beat === 0 || beat === 3 || beat === 6)) {
@@ -369,12 +418,12 @@ const gameAudio = (() => {
         const padScale = beat === 0
           ? (intro ? 0.45 : 0.82) * Math.max(0.65, introLayer)
           : (dropActive ? 0.65 : 0.48);
-        playChordPad(chord, nextMusicTime, musicLevel, padScale, padDuration);
+        playChordPad(chord, nextMusicTime, musicLevel, padScale, padDuration, style);
       }
       if (allowSnare && (beat === 2 || beat === 6)) {
         playMusicNoise(0.08, nextMusicTime, 0.038, 0.2);
       }
-      if (allowHihat && (musicStep % 2 === 0 || (musicLevel >= 3 && beat === 3))) {
+      if (allowHihat && (style.hatPattern.includes(beat) || (musicLevel >= 3 && beat === 3))) {
         playMusicNoise(0.025, nextMusicTime, musicLevel >= 3 ? 0.024 : 0.014, -0.35);
       }
       if (allowHihat && beat % 2 === 1) {
@@ -394,12 +443,13 @@ const gameAudio = (() => {
           melodyDuration,
           nextMusicTime,
           Math.sin(musicStep * 0.7) * 0.4,
-          musicLevel >= 3 ? 0.034 : 0.026
+          musicLevel >= 3 ? 0.034 : 0.026,
+          style
         );
       }
       if (dropActive && musicStep % 2 === 1) {
-        const arpMidi = chord.notes[(musicStep + beat) % chord.notes.length] + 12;
-        playSynthLead(arpMidi, 0.06, nextMusicTime, Math.sin(musicStep) * 0.5, 0.022);
+        const arpMidi = chord.notes[(musicStep + beat) % chord.notes.length] + style.leadOctave;
+        playSynthLead(arpMidi, 0.06, nextMusicTime, Math.sin(musicStep) * 0.5, 0.022, style);
       }
       if (buildActive && beat >= 4 && musicStep % 2 === 0) {
         playMusicNoise(0.035, nextMusicTime, 0.035 + (beat - 4) * 0.01, 0);
@@ -408,17 +458,18 @@ const gameAudio = (() => {
         playMusicNoise(0.028, nextMusicTime, 0.04 + (beat - 4) * 0.012, 0);
       }
       if (allowArp && musicStep % 2 === 0) {
-        const arpMidi = chord.notes[(Math.floor(musicStep / 2) + macroMeasure) % chord.notes.length] + 12;
+        const arpMidi = chord.notes[(Math.floor(musicStep / 2) + macroMeasure) % chord.notes.length] + style.leadOctave;
         playSynthLead(
           arpMidi,
           0.08,
           nextMusicTime,
           musicStep % 4 === 0 ? 0.3 : -0.3,
-          dropActive ? 0.022 : 0.014
+          dropActive ? 0.022 : 0.014,
+          style
         );
       }
       if (allowMelody && musicLevel >= 2 && (beat === 3 || (musicState.danger > 0.75 && beat === 7))) {
-        playSynthLead(chord.notes[2] + 12, 0.1, nextMusicTime, 0.35, 0.016);
+        playSynthLead(chord.notes[2] + style.leadOctave, 0.1, nextMusicTime, 0.35, 0.016, style);
       }
 
       musicStep += 1;
