@@ -72,6 +72,9 @@ const gameAudio = (() => {
       leadOctave: 12,
       bassFilter: 520,
       leadFilterQ: 0.8,
+      scale: [60, 62, 63, 65, 67, 68, 70, 72],
+      bassBeats: [0, 4],
+      melodyMode: 'motif',
       kickPattern: [0, 4],
       hatPattern: [1, 3, 5, 7]
     },
@@ -81,6 +84,9 @@ const gameAudio = (() => {
       leadOctave: 12,
       bassFilter: 430,
       leadFilterQ: 1.5,
+      scale: [60, 63, 65, 67, 70, 72],
+      bassBeats: [2, 6],
+      melodyMode: 'arp',
       kickPattern: [0, 3, 4, 6],
       hatPattern: [1, 3, 5, 7]
     },
@@ -90,6 +96,9 @@ const gameAudio = (() => {
       leadOctave: 12,
       bassFilter: 760,
       leadFilterQ: 1.8,
+      scale: [60, 62, 65, 67, 69, 72, 74],
+      bassBeats: [0, 3, 6],
+      melodyMode: 'syncopated',
       kickPattern: [0, 4, 6],
       hatPattern: [1, 2, 3, 5, 6, 7]
     },
@@ -99,6 +108,9 @@ const gameAudio = (() => {
       leadOctave: 24,
       bassFilter: 620,
       leadFilterQ: 2.4,
+      scale: [60, 61, 63, 65, 67, 68, 70, 72],
+      bassBeats: [0, 2, 5, 7],
+      melodyMode: 'ascending',
       kickPattern: [0, 2, 4, 6],
       hatPattern: [1, 3, 5, 7]
     },
@@ -108,10 +120,28 @@ const gameAudio = (() => {
       leadOctave: 12,
       bassFilter: 360,
       leadFilterQ: 1.2,
+      scale: [60, 62, 63, 67, 70, 72],
+      bassBeats: [0, 3, 4, 7],
+      melodyMode: 'sparse',
       kickPattern: [0, 3, 4, 7],
       hatPattern: [1, 2, 4, 5, 7]
     }
   ];
+  function getMelodyStep(style, position, chord, step) {
+    if (style.melodyMode === 'arp') {
+      return chord.notes[(Math.floor(step / 2) + position) % chord.notes.length] - 48;
+    }
+    if (style.melodyMode === 'syncopated') {
+      return [0, 3, 5, 2, 6, 4, 1, 5][(position + Math.floor(step / 4)) % 8];
+    }
+    if (style.melodyMode === 'ascending') {
+      return [0, 1, 2, 4, 5, 7, 6, 4][(position + Math.floor(step / 8)) % 8];
+    }
+    if (style.melodyMode === 'sparse') {
+      return [0, -1, 4, -1, 2, -1, 5, 1][position % 8];
+    }
+    return melodyMotif[position];
+  }
   const melodyTransitions = {
     0: [0, 1, 2, 4, 5],
     1: [0, 2, 3, 4, 6],
@@ -379,8 +409,8 @@ const gameAudio = (() => {
       const chord = activeProgression[bar];
       const bassLine = bassPatterns[bassPatternIndex];
       const motifPosition = Math.floor((musicStep % 16) / 2);
-      const melodyStep = melodyMotif[motifPosition];
-      const melodyMidi = minorScale[melodyStep] + style.leadOctave;
+      const melodyStep = getMelodyStep(style, motifPosition, chord, musicStep);
+      const melodyMidi = (style.scale[melodyStep] || style.scale[0]) + style.leadOctave;
       const bassMidi = chord.root + bassLine[beat];
       const melodyActive = musicPhase !== 'break' || musicState.danger > 0.55;
       const padActive = musicPhase !== 'groove' || musicLevel >= 2;
@@ -399,7 +429,7 @@ const gameAudio = (() => {
       const allowArp = musicStep >= 320 && macroMeasure >= 4 && !isDropPreBreak;
       const introLayer = Math.min(1, musicStep / 256);
 
-      if (allowBass && allowLowEnd && (beat === 0 || beat === 4 || (dropActive && beat === 7))) {
+      if (allowBass && allowLowEnd && (style.bassBeats.includes(beat) || (dropActive && beat === 7))) {
         const bassDuration = beat === 0 || dropActive ? 0.34 : 0.22;
         playBassSynth(bassMidi, bassDuration, nextMusicTime, dropActive ? 0.085 : 0.07, style);
         playSubBass(bassMidi - 12, bassDuration + 0.04, nextMusicTime, dropActive ? 0.095 : 0.065);
@@ -435,7 +465,11 @@ const gameAudio = (() => {
       if (
         allowMelody &&
         melodyActive &&
-        (musicStep % 2 === 0 || (dropActive && musicStep % 3 === 0)) &&
+        (style.melodyMode === 'sparse'
+          ? melodyStep >= 0 && (beat === 0 || beat === 4 || dropActive)
+          : style.melodyMode === 'syncopated'
+            ? beat === 1 || beat === 3 || beat === 6
+            : musicStep % 2 === 0 || (dropActive && musicStep % 3 === 0)) &&
         !isMotifRest
       ) {
         playSynthLead(
