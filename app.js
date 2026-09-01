@@ -534,7 +534,6 @@ function showPauseMenu() {
   menuScreen.hidden = false;
   menuScreen.classList.add('is-visible');
   gameAudio.start();
-  gameAudio.stopMusic();
   drawBoard();
 }
 
