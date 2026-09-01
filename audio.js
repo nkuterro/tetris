@@ -8,6 +8,7 @@ const gameAudio = (() => {
   let musicLevel = 1;
   let nextMusicTime = 0;
   let musicGain = null;
+  let subBassGain = null;
   let musicDelay = null;
   let musicFeedback = null;
   let musicFilter = null;
@@ -144,7 +145,7 @@ const gameAudio = (() => {
     oscillator.stop(when + duration + 0.02);
   }
 
-  function playChordPad(chord, when, level) {
+  function playChordPad(chord, when, level, gainScale = 1) {
     chord.notes.forEach((midi, index) => {
       playMusicTone(
         midiToFreq(midi),
@@ -152,10 +153,26 @@ const gameAudio = (() => {
         index === 0 ? 'sine' : 'triangle',
         level,
         when,
-        index === 0 ? 0.018 : 0.013,
+        (index === 0 ? 0.018 : 0.013) * gainScale,
         (index - 1.5) * 0.22
       );
     });
+  }
+
+  function playSubBass(midi, duration, when, gainValue = 0.16) {
+    if (!context || !subBassGain) return;
+
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(midiToFreq(midi), when);
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.exponentialRampToValueAtTime(gainValue, when + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    oscillator.connect(gain);
+    gain.connect(subBassGain);
+    oscillator.start(when);
+    oscillator.stop(when + duration + 0.02);
   }
 
   function playMusicNoise(duration, when, gainValue, pan = 0) {
@@ -182,6 +199,7 @@ const gameAudio = (() => {
 
   function playKick(when, gainValue = 0.12) {
     if (!context || !musicFilter) return;
+    triggerSidechain(when);
 
     const oscillator = context.createOscillator();
     const gain = context.createGain();
@@ -194,6 +212,17 @@ const gameAudio = (() => {
     gain.connect(getMusicOutput(0));
     oscillator.start(when);
     oscillator.stop(when + 0.13);
+  }
+
+  function triggerSidechain(when) {
+    if (!musicGain || !subBassGain) return;
+    const release = when + 0.16;
+    musicGain.gain.cancelScheduledValues(when);
+    musicGain.gain.setValueAtTime(0.16, when);
+    musicGain.gain.exponentialRampToValueAtTime(0.62, release);
+    subBassGain.gain.cancelScheduledValues(when);
+    subBassGain.gain.setValueAtTime(0.08, when);
+    subBassGain.gain.exponentialRampToValueAtTime(0.9, release);
   }
 
   function playRiser(when, duration = 0.7) {
@@ -264,6 +293,10 @@ const gameAudio = (() => {
       if (allowBass && (beat === 0 || beat === 3 || beat === 6 || (dropActive && beat === 7))) {
         playMusicTone(midiToFreq(bassMidi - 12), 0.24, 'sine', musicLevel, nextMusicTime, 0.13, -0.18);
         playMusicTone(midiToFreq(bassMidi), 0.16, 'triangle', musicLevel, nextMusicTime, 0.04, -0.1);
+        playSubBass(bassMidi - 12, 0.26, nextMusicTime, dropActive ? 0.18 : 0.14);
+      }
+      if (allowBass && (beat === 1 || beat === 5 || (dropActive && beat === 7))) {
+        playMusicTone(midiToFreq(bassMidi), 0.11, 'triangle', musicLevel, nextMusicTime, 0.032, -0.08);
       }
       if (!intro && dropActive && musicStep % 3 === 1) {
         playMusicTone(midiToFreq(chord.root - 12), 0.12, 'sine', musicLevel, nextMusicTime, 0.055, -0.25);
@@ -279,6 +312,9 @@ const gameAudio = (() => {
       }
       if (allowHihat && (musicStep % 2 === 0 || (musicLevel >= 3 && beat === 3))) {
         playMusicNoise(0.025, nextMusicTime, musicLevel >= 3 ? 0.024 : 0.014, -0.35);
+      }
+      if (allowHihat && beat % 2 === 1) {
+        playMusicNoise(0.06, nextMusicTime, dropActive ? 0.032 : 0.022, -0.2);
       }
       const isMotifRest = motifRestMask[motifPosition];
       const isPhraseEnd = motifPosition === melodyMotif.length - 1 || beat === 7;
@@ -323,6 +359,9 @@ const gameAudio = (() => {
       masterGain.connect(context.destination);
       musicGain = context.createGain();
       musicGain.gain.value = 0.62;
+      subBassGain = context.createGain();
+      subBassGain.gain.value = 0.9;
+      subBassGain.connect(masterGain);
       musicFilter = context.createBiquadFilter();
       musicFilter.type = 'lowpass';
       musicFilter.frequency.value = 1800;
