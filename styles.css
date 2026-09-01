@@ -283,26 +283,72 @@ button:active {
 
 @media (max-width: 768px) {
   body {
-    display: block;
-    padding: 12px;
+    display: grid;
+    padding: 8px;
   }
 
   .game-shell {
-    --board-width: min(300px, 78vw);
-    flex-direction: column;
-    align-items: center;
-    width: min(100%, 420px);
-    padding: 16px;
+    --board-width: min(300px, calc(100vw - 176px), calc((100svh - 24px) / 2));
+    align-items: flex-start;
+    gap: 10px;
+    width: min(100%, 760px);
+    padding: 8px;
     margin: 0 auto;
   }
 
   .sidebar {
-    width: 100%;
-    flex: 0 0 auto;
+    width: 140px;
+    flex: 0 0 140px;
+    gap: 8px;
   }
 
   .touch-controls {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .touch-btn {
+    min-height: 40px;
+    padding: 6px 2px;
+    font-size: 0.95rem;
+  }
+
+  .card {
+    padding: 10px 8px;
+  }
+
+  h1 {
+    font-size: 1.35rem;
+  }
+
+  .stats {
+    gap: 6px;
+  }
+
+  .stats div,
+  .controls-card ul {
+    font-size: 0.72rem;
+  }
+
+  .controls-card ul {
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  .controls-card button {
+    padding: 8px 5px;
+    font-size: 0.72rem;
+  }
+
+  .preview-card h2 {
+    margin-bottom: 6px;
+    font-size: 0.7rem;
+  }
+
+  #hold,
+  #next {
+    width: 80px;
+    height: 80px;
   }
 }
 
@@ -312,16 +358,18 @@ button:active {
   }
 
   .game-shell {
-    padding: 12px;
-    gap: 16px;
+    --board-width: min(300px, calc(100vw - 164px), calc((100svh - 24px) / 2));
+    padding: 6px;
+    gap: 8px;
   }
 
   .panel {
-    padding: 8px;
+    padding: 6px;
   }
 
   .sidebar {
-    width: min(100%, 260px);
+    width: 132px;
+    flex-basis: 132px;
   }
 }
 
