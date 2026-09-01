@@ -100,6 +100,14 @@ let particles = [];
 let floatingTexts = [];
 let shakeTime = 0;
 let shockwave = null;
+let backgroundImpact = 0;
+let backgroundFlash = 0;
+const backgroundStars = Array.from({ length: 90 }, () => ({
+  x: Math.random() * 2 - 1,
+  y: Math.random() * 2 - 1,
+  depth: 0.15 + Math.random() * 0.85,
+  size: 0.5 + Math.random() * 2
+}));
 
 function updateDebugStatus(message = '') {
   if (!debugStatus) return;
@@ -129,6 +137,8 @@ function drawBackground(timestamp) {
   const hue = (190 + levelIndex * 31) % 360;
   const pattern = Math.floor(levelIndex / 2) % 4;
   const intensity = Math.min(0.9, 0.28 + levelIndex * 0.035);
+  const pulse = 0.5 + Math.sin(time * (2.2 + pattern * 0.35)) * 0.5;
+  const impact = backgroundImpact;
   document.documentElement.style.setProperty('--level-hue', hue);
 
   bgCtx.clearRect(0, 0, width, height);
@@ -149,7 +159,7 @@ function drawBackground(timestamp) {
     bgCtx.beginPath();
     for (let x = -20; x <= width + 20; x += 14) {
       const y = height * (0.2 + wave * 0.2)
-        + Math.sin(x * (0.004 + pattern * 0.001) + time * (0.42 + wave * 0.08)) * (24 + levelIndex * 2)
+        + Math.sin(x * (0.004 + pattern * 0.001) + time * (0.42 + wave * 0.08)) * (24 + levelIndex * 2 + impact * 24)
         + Math.cos(x * 0.012 - time * (0.24 + pattern * 0.05)) * 14;
       if (x === -20) bgCtx.moveTo(x, y);
       else bgCtx.lineTo(x, y);
@@ -158,8 +168,8 @@ function drawBackground(timestamp) {
     bgCtx.shadowColor = `hsl(${waveHue} 90% 65%)`;
     bgCtx.shadowBlur = 16;
     bgCtx.strokeStyle = wave % 2 === 0
-      ? `hsla(${waveHue}, 90%, 65%, ${0.2 + intensity * 0.18})`
-      : `hsla(${waveHue}, 90%, 72%, ${0.14 + intensity * 0.14})`;
+      ? `hsla(${waveHue}, 90%, 65%, ${0.2 + intensity * 0.18 + impact * 0.2})`
+      : `hsla(${waveHue}, 90%, 72%, ${0.14 + intensity * 0.14 + impact * 0.14})`;
     bgCtx.lineWidth = 2.2;
     bgCtx.stroke();
     bgCtx.shadowBlur = 0;
@@ -176,6 +186,78 @@ function drawBackground(timestamp) {
     bgCtx.stroke();
   }
   bgCtx.restore();
+
+  bgCtx.save();
+  bgCtx.translate(width / 2, height / 2);
+  bgCtx.globalCompositeOperation = 'screen';
+  if (pattern === 0) {
+    bgCtx.strokeStyle = `hsla(${hue}, 90%, 65%, ${0.12 + intensity * 0.1})`;
+    bgCtx.lineWidth = 1;
+    for (let line = -12; line <= 12; line += 1) {
+      bgCtx.beginPath();
+      bgCtx.moveTo(line * 80, height * 0.62);
+      bgCtx.lineTo(line * 28, -height * 0.62);
+      bgCtx.stroke();
+    }
+    for (let row = 0; row < 9; row += 1) {
+      const y = Math.pow(row / 9, 1.7) * height * 1.1;
+      bgCtx.beginPath();
+      bgCtx.moveTo(-width, y);
+      bgCtx.lineTo(width, y);
+      bgCtx.stroke();
+    }
+  } else if (pattern === 1) {
+    backgroundStars.forEach((star) => {
+      const travel = (time * (0.08 + levelIndex * 0.006) * star.depth) % 1;
+      const x = star.x * width * (0.35 + travel * 0.9);
+      const y = star.y * height * (0.35 + travel * 0.9);
+      const alpha = (0.18 + travel * 0.6) * (0.5 + star.depth * 0.5);
+      bgCtx.fillStyle = `hsla(${(hue + 50) % 360}, 95%, 78%, ${alpha})`;
+      bgCtx.fillRect(x, y, star.size * (1 + travel * 4), star.size * (1 + travel * 4));
+    });
+  } else if (pattern === 2) {
+    bgCtx.globalAlpha = 0.22 + intensity * 0.18;
+    for (let band = 0; band < 4; band += 1) {
+      const bandHue = (hue + band * 55) % 360;
+      bgCtx.fillStyle = `hsla(${bandHue}, 90%, 55%, 0.12)`;
+      bgCtx.beginPath();
+      bgCtx.moveTo(-width, -height * 0.1 + band * 70);
+      for (let x = -width; x <= width; x += 24) {
+        bgCtx.lineTo(x, Math.sin(x * 0.004 + time + band) * (45 + impact * 30) + band * 70);
+      }
+      bgCtx.lineTo(width, height);
+      bgCtx.lineTo(-width, height);
+      bgCtx.closePath();
+      bgCtx.fill();
+    }
+  } else {
+    bgCtx.strokeStyle = `hsla(${(hue + 100) % 360}, 95%, 70%, ${0.1 + intensity * 0.1})`;
+    bgCtx.lineWidth = 1.3;
+    const size = 42;
+    for (let y = -height; y < height; y += size * 1.72) {
+      for (let x = -width; x < width; x += size * 1.5) {
+        const offset = (Math.floor(y / (size * 1.72)) % 2) * size * 0.75;
+        const pulseCell = 0.5 + Math.sin(time * 2 + x * 0.01 + y * 0.008) * 0.5;
+        bgCtx.globalAlpha = 0.04 + pulseCell * 0.12;
+        bgCtx.beginPath();
+        for (let side = 0; side < 6; side += 1) {
+          const angle = Math.PI / 3 * side;
+          const px = x + offset + Math.cos(angle) * size * 0.42;
+          const py = y + Math.sin(angle) * size * 0.42;
+          if (side === 0) bgCtx.moveTo(px, py);
+          else bgCtx.lineTo(px, py);
+        }
+        bgCtx.closePath();
+        bgCtx.stroke();
+      }
+    }
+  }
+  bgCtx.restore();
+
+  if (backgroundFlash > 0) {
+    bgCtx.fillStyle = `hsla(${hue}, 100%, 75%, ${backgroundFlash * 0.16})`;
+    bgCtx.fillRect(0, 0, width, height);
+  }
 }
 
 function shuffle(array) {
@@ -294,6 +376,8 @@ function clearLines() {
     }
   });
   shakeTime = cleared === 4 ? 18 : 5;
+  backgroundImpact = cleared === 4 ? 1 : 0.45;
+  backgroundFlash = cleared === 4 ? 1 : 0.45;
   if (cleared === 4) {
     floatingTexts.push({ text: 'TETRIS!', x: boardCanvas.width / 2, y: boardCanvas.height / 2, color: '#facc15', scale: 0.55, alpha: 1 });
     shockwave = { radius: 20, alpha: 0.9 };
@@ -437,6 +521,7 @@ function hardDrop() {
   }
 
   score += distance * 2;
+  backgroundImpact = Math.max(backgroundImpact, Math.min(0.8, 0.2 + distance / 24));
   gameAudio.hardDrop();
   updateStats();
   lockPiece();
@@ -540,6 +625,8 @@ function updateEffects(delta) {
   });
 
   shakeTime = Math.max(0, shakeTime - frame);
+  backgroundImpact = Math.max(0, backgroundImpact - 0.045 * frame);
+  backgroundFlash = Math.max(0, backgroundFlash - 0.06 * frame);
   if (shockwave) {
     shockwave.radius += 8 * frame;
     shockwave.alpha -= 0.045 * frame;
@@ -698,6 +785,8 @@ function resetGame() {
   floatingTexts = [];
   shakeTime = 0;
   shockwave = null;
+  backgroundImpact = 0;
+  backgroundFlash = 0;
   isClearing = false;
   dropCount = 0;
   lastInput = 'reset';
