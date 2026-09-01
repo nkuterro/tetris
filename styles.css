@@ -69,6 +69,18 @@ canvas {
   width: var(--board-width);
 }
 
+.debug-status {
+  width: var(--board-width);
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 8px;
+  color: #bae6fd;
+  background: rgba(2, 8, 23, 0.75);
+  font: 11px/1.35 Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
 .touch-btn {
   appearance: none;
   border: none;

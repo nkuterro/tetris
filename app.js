@@ -16,6 +16,7 @@ const levelEl = document.getElementById('level');
 const startBtn = document.getElementById('start-btn');
 const soundBtn = document.getElementById('sound-btn');
 const touchButtons = document.querySelectorAll('.touch-btn');
+const debugStatus = document.getElementById('debug-status');
 
 const COLORS = {
   I: '#38bdf8',
@@ -85,6 +86,17 @@ let isClearing = false;
 let clearEffect = [];
 let clearTimeoutId = null;
 let dropTimerId = null;
+let dropCount = 0;
+let lastInput = '-';
+
+function updateDebugStatus(message = '') {
+  if (!debugStatus) return;
+  const piece = currentPiece ? `${currentPiece.type}@${currentPiece.x},${currentPiece.y}` : '-';
+  debugStatus.textContent =
+    `診断: running=${isRunning} paused=${isPaused} over=${gameOver} ` +
+    `timer=${Boolean(dropTimerId)} drops=${dropCount} piece=${piece} input=${lastInput}` +
+    (message ? ` error=${message}` : '');
+}
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -220,6 +232,8 @@ function clearLines() {
     board.splice(0, board.length, ...remaining);
     clearEffect = [];
     isClearing = false;
+    dropCount = 0;
+    lastInput = 'reset';
     clearTimeoutId = null;
     spawnPiece();
     drawBoard();
@@ -500,6 +514,7 @@ function resetGame() {
   drawHoldPreview();
   drawNextPreview();
   scheduleDrop();
+  updateDebugStatus();
 }
 
 function scheduleDrop() {
@@ -510,12 +525,15 @@ function scheduleDrop() {
   dropTimerId = setTimeout(() => {
     dropTimerId = null;
     if (isRunning && !isPaused && !gameOver && !isClearing) {
+      dropCount += 1;
       movePiece(0, 1);
     }
     if (isRunning && !gameOver) {
       scheduleDrop();
     }
+    updateDebugStatus();
   }, dropInterval);
+  updateDebugStatus();
 }
 
 function endGame() {
@@ -557,6 +575,8 @@ function togglePause() {
 }
 
 function handleTouchAction(action) {
+  lastInput = `touch:${action}`;
+  updateDebugStatus();
   if (!isRunning || isPaused || gameOver) {
     return;
   }
@@ -589,6 +609,8 @@ function handleTouchAction(action) {
 
 window.addEventListener('keydown', (event) => {
   const key = event.code;
+  lastInput = `key:${key}`;
+  updateDebugStatus();
 
   if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'Space'].includes(key)) {
     event.preventDefault();
@@ -647,6 +669,10 @@ touchButtons.forEach((button) => {
     gameAudio.start();
     handleTouchAction(button.dataset.action);
   });
+});
+
+window.addEventListener('error', (event) => {
+  updateDebugStatus(event.message || 'unknown');
 });
 
 resetGame();
