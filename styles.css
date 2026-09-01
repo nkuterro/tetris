@@ -18,9 +18,19 @@ body {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: radial-gradient(circle at top, #0f172a, var(--bg));
+  background: #020817;
   color: var(--text);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.72;
 }
 
 .menu-screen {
@@ -29,7 +39,8 @@ body {
   z-index: 10;
   place-items: center;
   padding: 20px;
-  background: radial-gradient(circle at top, #0f172a, var(--bg));
+  background: rgba(2, 8, 23, 0.72);
+  backdrop-filter: blur(8px);
 }
 
 .menu-screen.is-visible {
@@ -115,6 +126,12 @@ body {
   background: rgba(15, 23, 42, 0.9);
   box-shadow: 0 24px 60px var(--shadow);
   border: 1px solid rgba(148, 163, 184, 0.18);
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(10px);
+  background:
+    linear-gradient(135deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.82)),
+    radial-gradient(circle at 50% 0, rgba(34, 211, 238, 0.08), transparent 50%);
 }
 
 .hold-side {
@@ -156,7 +173,7 @@ canvas {
   grid-template-rows: repeat(3, minmax(40px, 1fr));
   gap: 8px;
   width: var(--board-width);
-  max-width: 220px;
+  max-width: 300px;
   margin: 0 auto;
 }
 
@@ -164,14 +181,16 @@ canvas {
   appearance: none;
   border: none;
   border-radius: 12px;
-  background: rgba(34, 211, 238, 0.14);
+  background: linear-gradient(145deg, rgba(34, 211, 238, 0.24), rgba(59, 130, 246, 0.16));
   color: var(--text);
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  min-height: 48px;
+  min-height: 56px;
+  border: 1px solid rgba(103, 232, 249, 0.28);
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.12), 0 6px 14px rgba(2, 8, 23, 0.35);
 }
 
 .dpad-up {
@@ -202,7 +221,7 @@ canvas {
 .action-hold {
   grid-column: 5;
   grid-row: 3;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
 .touch-btn:active {
@@ -219,10 +238,12 @@ canvas {
 }
 
 .card {
-  background: var(--panel-alt);
+  background: linear-gradient(145deg, rgba(51, 65, 85, 0.78), rgba(31, 41, 55, 0.72));
   border-radius: 12px;
   padding: 16px 14px;
   border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.06), 0 12px 28px rgba(2, 8, 23, 0.25);
+  backdrop-filter: blur(8px);
 }
 
 h1,
@@ -260,6 +281,8 @@ h2 {
 
 .stats strong {
   font-size: 1.05rem;
+  color: #67e8f9;
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
 }
 
 .preview-card {
@@ -291,7 +314,8 @@ h2 {
 }
 
 .quick-btn {
-  padding: 8px 6px;
+  min-height: 44px;
+  padding: 10px 8px;
   font-size: 0.78rem;
 }
 
@@ -305,6 +329,7 @@ button {
   padding: 10px 12px;
   cursor: pointer;
   transition: transform 0.15s ease, filter 0.15s ease;
+  box-shadow: 0 8px 18px rgba(2, 8, 23, 0.3);
 }
 
 button:hover {
@@ -362,13 +387,14 @@ button:active {
 
   .touch-controls {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 5px;
+    gap: 7px;
+    max-width: 300px;
   }
 
   .touch-btn {
-    min-height: 40px;
-    padding: 6px 2px;
-    font-size: 0.95rem;
+    min-height: 52px;
+    padding: 7px 2px;
+    font-size: 1.05rem;
   }
 
   .card {
@@ -424,9 +450,29 @@ button:active {
   }
 
   .game-shell {
-    --board-width: min(300px, calc(100vw - 224px), calc((100svh - 24px) / 2));
+    --board-width: min(300px, calc(100vw - 32px), calc((100svh - 220px) / 2));
+    flex-direction: column;
+    align-items: center;
     padding: 6px;
     gap: 8px;
+  }
+
+  .hold-side,
+  .sidebar {
+    width: min(100%, 300px);
+    flex: 0 0 auto;
+  }
+
+  .hold-side {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .panel {

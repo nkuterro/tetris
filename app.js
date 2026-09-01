@@ -22,6 +22,8 @@ const volumeSlider = document.getElementById('volume-slider');
 const volumeValue = document.getElementById('volume-value');
 const actionButtons = document.querySelectorAll('[data-action]');
 const debugStatus = document.getElementById('debug-status');
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx = bgCanvas.getContext('2d');
 
 const COLORS = {
   I: '#38bdf8',
@@ -110,6 +112,50 @@ function updateDebugStatus(message = '') {
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+}
+
+function resizeBackground() {
+  const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  bgCanvas.width = Math.floor(window.innerWidth * ratio);
+  bgCanvas.height = Math.floor(window.innerHeight * ratio);
+  bgCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
+function drawBackground(timestamp) {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const time = timestamp * 0.001;
+  const danger = Math.min(1, (level - 1) / 8);
+
+  bgCtx.clearRect(0, 0, width, height);
+  const gradient = bgCtx.createRadialGradient(
+    width * 0.5,
+    height * 0.32,
+    0,
+    width * 0.5,
+    height * 0.5,
+    Math.max(width, height) * 0.75
+  );
+  gradient.addColorStop(0, danger > 0.5 ? 'rgba(76, 29, 55, 0.42)' : 'rgba(15, 53, 78, 0.42)');
+  gradient.addColorStop(1, 'rgba(2, 8, 23, 0.96)');
+  bgCtx.fillStyle = gradient;
+  bgCtx.fillRect(0, 0, width, height);
+
+  for (let wave = 0; wave < 4; wave += 1) {
+    bgCtx.beginPath();
+    for (let x = -20; x <= width + 20; x += 14) {
+      const y = height * (0.2 + wave * 0.2)
+        + Math.sin(x * 0.006 + time * (0.42 + wave * 0.08)) * (18 + danger * 22)
+        + Math.cos(x * 0.012 - time * 0.24) * 10;
+      if (x === -20) bgCtx.moveTo(x, y);
+      else bgCtx.lineTo(x, y);
+    }
+    bgCtx.strokeStyle = wave % 2 === 0
+      ? `rgba(34, 211, 238, ${0.045 + danger * 0.025})`
+      : `rgba(167, 139, 250, ${0.035 + danger * 0.02})`;
+    bgCtx.lineWidth = 1.5;
+    bgCtx.stroke();
+  }
 }
 
 function shuffle(array) {
@@ -878,6 +924,9 @@ volumeSlider.addEventListener('input', () => {
 actionButtons.forEach((button) => {
   button.addEventListener('pointerdown', (event) => {
     event.preventDefault();
+    if (typeof navigator.vibrate === 'function') {
+      navigator.vibrate(8);
+    }
     if (typeof gameAudio !== 'undefined') {
       gameAudio.start();
     }
@@ -890,4 +939,10 @@ window.addEventListener('error', (event) => {
 });
 
 resetGame();
+resizeBackground();
+window.addEventListener('resize', resizeBackground);
+window.requestAnimationFrame(function animateBackground(timestamp) {
+  drawBackground(timestamp);
+  window.requestAnimationFrame(animateBackground);
+});
 requestAnimationFrame(tick);
