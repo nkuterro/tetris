@@ -526,12 +526,14 @@ function resetGame() {
 function showPauseMenu() {
   if (!isRunning || gameOver) return;
   isPaused = true;
+  menuScreen.hidden = false;
   menuScreen.classList.add('is-visible');
   gameAudio.start();
   drawBoard();
 }
 
 function hidePauseMenu() {
+  menuScreen.hidden = true;
   menuScreen.classList.remove('is-visible');
   isPaused = false;
   gameAudio.start();

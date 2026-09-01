@@ -27,7 +27,6 @@ body {
   position: fixed;
   inset: 0;
   z-index: 10;
-  display: none;
   place-items: center;
   padding: 20px;
   background: radial-gradient(circle at top, #0f172a, var(--bg));
@@ -35,6 +34,10 @@ body {
 
 .menu-screen.is-visible {
   display: grid;
+}
+
+.menu-screen[hidden] {
+  display: none;
 }
 
 .menu-card {
