@@ -538,6 +538,10 @@ function hidePauseMenu() {
   menuScreen.hidden = true;
   menuScreen.classList.remove('is-visible');
   isPaused = false;
+  isRunning = true;
+  if (!dropTimerId) {
+    scheduleDrop();
+  }
   gameAudio.start();
   drawBoard();
 }
@@ -601,7 +605,20 @@ function togglePause() {
 function handleTouchAction(action) {
   lastInput = `touch:${action}`;
   updateDebugStatus();
-  if (!isRunning || isPaused || gameOver) {
+  if (action === 'pause') {
+    togglePause();
+    return;
+  }
+
+  if (!isRunning && !gameOver) {
+    isRunning = true;
+    isPaused = false;
+    if (!dropTimerId) {
+      scheduleDrop();
+    }
+  }
+
+  if (isPaused || gameOver) {
     return;
   }
 
@@ -626,9 +643,6 @@ function handleTouchAction(action) {
     case 'hold':
       holdCurrentPiece();
       break;
-    case 'pause':
-      togglePause();
-      break;
     default:
       break;
   }
@@ -651,7 +665,15 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
-  if (!isRunning || isPaused || gameOver) {
+  if (!isRunning && !gameOver) {
+    isRunning = true;
+    isPaused = false;
+    if (!dropTimerId) {
+      scheduleDrop();
+    }
+  }
+
+  if (isPaused || gameOver) {
     return;
   }
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tetris</title>
-    <link rel="stylesheet" href="styles.css?v=20260901-4" />
+    <link rel="stylesheet" href="styles.css?v=20260901-5" />
   </head>
   <body>
     <main id="menu-screen" class="menu-screen" hidden>
@@ -42,8 +42,9 @@
         <div class="touch-controls" aria-label="Touch controls">
           <button type="button" class="touch-btn dpad-up" data-action="drop">↑</button>
           <button type="button" class="touch-btn dpad-left" data-action="left">◀</button>
-          <button type="button" class="touch-btn dpad-down" data-action="down">▼</button>
+          <button type="button" class="touch-btn dpad-center" data-action="rotate">⟳</button>
           <button type="button" class="touch-btn dpad-right" data-action="right">▶</button>
+          <button type="button" class="touch-btn dpad-down" data-action="down">▼</button>
         </div>
       </div>
 
@@ -64,7 +65,6 @@
 
         <div class="card controls-card">
           <div class="quick-actions">
-            <button type="button" class="quick-btn" data-action="rotate">⟳ Rotate</button>
             <button type="button" class="quick-btn" data-action="hold">Hold</button>
             <button type="button" class="quick-btn" data-action="pause">Pause</button>
           </div>
@@ -82,7 +82,7 @@
       </aside>
     </div>
 
-    <script src="audio.js?v=20260901-4"></script>
-    <script src="app.js?v=20260901-4"></script>
+    <script src="audio.js?v=20260901-5"></script>
+    <script src="app.js?v=20260901-5"></script>
   </body>
 </html>
