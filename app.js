@@ -290,7 +290,7 @@ function shuffle(array) {
 }
 
 function getDropInterval(currentLevel) {
-  return Math.max(120, 800 - (currentLevel - 1) * 70);
+  return Math.max(120, 1000 - (currentLevel - 1) * 75);
 }
 
 function refillQueue() {
@@ -391,8 +391,18 @@ function clearLines() {
   rowsToClear.forEach((y) => {
     for (let x = 0; x < COLS; x += 1) {
       if (board[y][x]) {
-        createParticles(x * BLOCK, y * BLOCK, COLORS[board[y][x]], cleared === 4 ? 10 : 5);
+        createParticles(x * BLOCK, y * BLOCK, COLORS[board[y][x]], cleared === 4 ? 12 : 7);
       }
+    }
+  });
+  rowsToClear.forEach((y) => {
+    for (let i = 0; i < 8; i += 1) {
+      createParticles(
+        Math.random() * COLS * BLOCK,
+        y * BLOCK,
+        '#f8fafc',
+        1
+      );
     }
   });
   shakeTime = cleared === 4 ? 18 : 5;
@@ -413,7 +423,16 @@ function clearLines() {
   }
   const lineScores = [0, 100, 300, 500, 800];
   const nextCombo = combo + 1;
-  score += lineScores[cleared] * level + Math.max(0, nextCombo - 1) * 50 * level;
+  const awardedScore = lineScores[cleared] * level + Math.max(0, nextCombo - 1) * 50 * level;
+  score += awardedScore;
+  floatingTexts.push({
+    text: `+${awardedScore}`,
+    x: boardCanvas.width / 2,
+    y: boardCanvas.height / 2 + (cleared === 4 ? 44 : 34),
+    color: '#f8fafc',
+    scale: cleared === 4 ? 0.44 : 0.38,
+    alpha: 0.95
+  });
   lines += cleared;
   combo = nextCombo;
   const previousLevel = level;
@@ -574,6 +593,16 @@ function hardDrop() {
   }
 
   score += distance * 2;
+  if (distance >= 3) {
+    floatingTexts.push({
+      text: `+${distance * 2}`,
+      x: (currentPiece.x + currentPiece.matrix[0].length / 2) * BLOCK,
+      y: Math.max(24, currentPiece.y * BLOCK),
+      color: '#86efac',
+      scale: 0.32,
+      alpha: 0.85
+    });
+  }
   gameAudio.hardDrop();
   updateStats();
   lockPiece();
@@ -772,8 +801,11 @@ function drawBoard() {
     boardCtx.fillStyle = text.color;
     boardCtx.textAlign = 'center';
     boardCtx.font = `900 ${Math.floor(30 * text.scale)}px Segoe UI`;
+    boardCtx.lineWidth = 3;
+    boardCtx.strokeStyle = 'rgba(2, 8, 23, 0.8)';
     boardCtx.shadowColor = text.color;
     boardCtx.shadowBlur = 14;
+    boardCtx.strokeText(text.text, text.x, text.y);
     boardCtx.fillText(text.text, text.x, text.y);
     boardCtx.restore();
   });
