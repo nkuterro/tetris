@@ -593,16 +593,6 @@ function hardDrop() {
   }
 
   score += distance * 2;
-  if (distance >= 3) {
-    floatingTexts.push({
-      text: `+${distance * 2}`,
-      x: (currentPiece.x + currentPiece.matrix[0].length / 2) * BLOCK,
-      y: Math.max(24, currentPiece.y * BLOCK),
-      color: '#86efac',
-      scale: 0.5,
-      alpha: 0.85
-    });
-  }
   gameAudio.hardDrop();
   updateStats();
   lockPiece();

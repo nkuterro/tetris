@@ -69,15 +69,13 @@ body {
 
 .game-logo {
   color: #f8fafc;
-  font-family: Impact, "Arial Black", sans-serif;
+  font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   line-height: 0.95;
-  text-shadow:
-    3px 3px 0 #2563eb,
-    6px 6px 0 #7c3aed,
-    0 0 18px rgba(34, 211, 238, 0.72);
-  transform: scaleX(1.04);
+  -webkit-text-stroke: 2px #172554;
+  text-shadow: 2px 2px 0 #2563eb;
+  transform: scaleX(1.02);
 }
 
 .eyebrow {
