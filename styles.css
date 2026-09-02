@@ -67,6 +67,19 @@ body {
   font-size: clamp(2.4rem, 12vw, 4rem);
 }
 
+.game-logo {
+  color: #f8fafc;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 0.95;
+  text-shadow:
+    3px 3px 0 #2563eb,
+    6px 6px 0 #7c3aed,
+    0 0 18px rgba(34, 211, 238, 0.72);
+  transform: scaleX(1.04);
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: var(--accent);
