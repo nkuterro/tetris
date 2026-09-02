@@ -409,15 +409,15 @@ function clearLines() {
   backgroundImpact = cleared === 4 ? 1 : 0.45;
   backgroundFlash = cleared === 4 ? 1 : 0.45;
   if (cleared === 4) {
-    floatingTexts.push({ text: 'TETRIS!', x: boardCanvas.width / 2, y: boardCanvas.height / 2, color: '#facc15', scale: 0.55, alpha: 1 });
+    floatingTexts.push({ text: 'TETRIS!', x: boardCanvas.width / 2, y: boardCanvas.height / 2 - 18, color: '#facc15', scale: 0.62, alpha: 1 });
     shockwave = { radius: 20, alpha: 0.9 };
   } else if (combo > 0) {
     floatingTexts.push({
       text: `COMBO x ${combo + 1}`,
       x: boardCanvas.width / 2,
-      y: boardCanvas.height / 2 + 42,
+      y: boardCanvas.height / 2 + 58,
       color: '#fbbf24',
-      scale: 0.48,
+      scale: 0.54,
       alpha: 1
     });
   }
@@ -425,14 +425,9 @@ function clearLines() {
   const nextCombo = combo + 1;
   const awardedScore = lineScores[cleared] * level + Math.max(0, nextCombo - 1) * 50 * level;
   score += awardedScore;
-  floatingTexts.push({
-    text: `+${awardedScore}`,
-    x: boardCanvas.width / 2,
-    y: boardCanvas.height / 2 + (cleared === 4 ? 72 : 56),
-    color: '#f8fafc',
-    scale: cleared === 4 ? 0.68 : 0.58,
-    alpha: 0.95
-  });
+  if (cleared >= 2 && cleared < 4) {
+    shockwave = { radius: 28, alpha: 0.45 };
+  }
   lines += cleared;
   combo = nextCombo;
   const previousLevel = level;
@@ -755,6 +750,16 @@ function drawBoard() {
 
   if (clearEffect.length) {
     const pulse = 0.45 + ((Math.sin(performance.now() / 28) + 1) * 0.55);
+    const clearRows = new Set(clearEffect.map(({ y }) => y));
+    boardCtx.save();
+    boardCtx.globalAlpha = 0.16 + pulse * 0.16;
+    boardCtx.fillStyle = '#f8fafc';
+    boardCtx.shadowColor = '#67e8f9';
+    boardCtx.shadowBlur = 18;
+    clearRows.forEach((y) => {
+      boardCtx.fillRect(0, y * BLOCK + BLOCK * 0.2, boardCanvas.width, BLOCK * 0.6);
+    });
+    boardCtx.restore();
     clearEffect.forEach(({ x, y }) => {
       drawCell(boardCtx, x, y, '#f8fafc', BLOCK, pulse);
     });
