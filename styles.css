@@ -85,6 +85,13 @@ body {
   margin: 0 0 24px;
 }
 
+.build-version {
+  margin: 16px 0 0;
+  color: rgba(148, 163, 184, 0.72);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
 .menu-card > button + button {
   margin-top: 10px;
 }

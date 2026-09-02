@@ -428,9 +428,9 @@ function clearLines() {
   floatingTexts.push({
     text: `+${awardedScore}`,
     x: boardCanvas.width / 2,
-    y: boardCanvas.height / 2 + (cleared === 4 ? 44 : 34),
+    y: boardCanvas.height / 2 + (cleared === 4 ? 72 : 56),
     color: '#f8fafc',
-    scale: cleared === 4 ? 0.44 : 0.38,
+    scale: cleared === 4 ? 0.68 : 0.58,
     alpha: 0.95
   });
   lines += cleared;
@@ -599,7 +599,7 @@ function hardDrop() {
       x: (currentPiece.x + currentPiece.matrix[0].length / 2) * BLOCK,
       y: Math.max(24, currentPiece.y * BLOCK),
       color: '#86efac',
-      scale: 0.32,
+      scale: 0.5,
       alpha: 0.85
     });
   }
