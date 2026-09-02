@@ -74,8 +74,8 @@ body {
   font-size: clamp(3.2rem, 16vw, 4rem) !important;
   letter-spacing: 0.06em;
   line-height: 0.95;
-  -webkit-text-stroke: 2px #172554;
-  text-shadow: 2px 2px 0 #2563eb;
+  -webkit-text-stroke: 1px #172554;
+  text-shadow: 1px 1px 0 #2563eb;
   white-space: nowrap;
   transform: scaleX(1.02);
   -webkit-font-smoothing: antialiased;
@@ -83,6 +83,8 @@ body {
 
 .sidebar .game-logo {
   font-size: 1.35rem !important;
+  -webkit-text-stroke: 0;
+  text-shadow: 1px 1px 0 #2563eb;
 }
 
 .eyebrow {
